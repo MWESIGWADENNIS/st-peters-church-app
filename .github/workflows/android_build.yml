@@ -8,8 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       
@@ -23,30 +21,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
           cache: 'npm'
-
-      - name: Debug Info
-        run: |
-          node -v
-          npm -v
-          ls -la
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
       - name: Build Web App
-        run: npx vite build
+        run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder' }}
 
-      - name: Initialize Capacitor Android
+      - name: Capacitor Update
         run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
-          npx cap sync
+          npx cap sync || (npx cap add android && npx cap sync)
 
       - name: Generate App Icons
         run: |
