@@ -3,6 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,16 +21,24 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
 
-      - name: Check Files
-        run: |
-          ls -la
-          if [ -d "android" ]; then echo "Android folder exists"; else echo "Android folder MISSING - will attempt to regenerate"; fi
-
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
+
+      - name: Build Web App
+        run: npx vite build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder' }}
+
+      - name: Initialize Capacitor Android
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync
 
       - name: Generate App Icons
         run: |
@@ -38,28 +47,12 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xhdpi
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          # Download the logo
           curl -L "https://qgtgdhkdffajlyqxthvi.supabase.co/storage/v1/object/public/church-assets/church/logo-0.723806111151566.jpg" -o icon.jpg
-          # We use a simple copy for now, in a real env we'd use imagemagick to resize
-          # But Capacitor/Android will handle basic scaling if we put it in the right place
-          cp icon.jpg android/app/src/main/res/mipmap-mdpi/ic_launcher.jpg
-          cp icon.jpg android/app/src/main/res/mipmap-hdpi/ic_launcher.jpg
-          cp icon.jpg android/app/src/main/res/mipmap-xhdpi/ic_launcher.jpg
-          cp icon.jpg android/app/src/main/res/mipmap-xxhdpi/ic_launcher.jpg
-          cp icon.jpg android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.jpg
-
-      - name: Build Web App
-        run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder' }}
-
-      - name: Capacitor Sync
-        run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
-          npx cap sync
+          cp icon.jpg android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp icon.jpg android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp icon.jpg android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp icon.jpg android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp icon.jpg android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: Build Android APK
         run: |
@@ -70,5 +63,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: St-Peters-Church-App
           path: android/app/build/outputs/apk/debug/app-debug.apk

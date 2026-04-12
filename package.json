@@ -14,9 +14,9 @@
     "cap:build": "npm run build && npx cap sync"
   },
   "dependencies": {
-    "@capacitor/android": "^8.3.0",
-    "@capacitor/cli": "^8.3.0",
-    "@capacitor/core": "^8.3.0",
+    "@capacitor/android": "latest",
+    "@capacitor/cli": "latest",
+    "@capacitor/core": "latest",
     "@google/genai": "^1.29.0",
     "@supabase/supabase-js": "^2.102.1",
     "@tailwindcss/vite": "^4.1.14",
