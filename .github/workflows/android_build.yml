@@ -26,7 +26,7 @@ jobs:
       - name: Check Files
         run: |
           ls -la
-          if [ -d "android" ]; then echo "Android folder exists"; else echo "Android folder MISSING"; exit 1; fi
+          if [ -d "android" ]; then echo "Android folder exists"; else echo "Android folder MISSING - will attempt to regenerate"; fi
 
       - name: Install dependencies
         run: npm install
@@ -51,11 +51,15 @@ jobs:
       - name: Build Web App
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder' }}
 
       - name: Capacitor Sync
-        run: npx cap sync
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync
 
       - name: Build Android APK
         run: |
