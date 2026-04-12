@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Lato", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", serif;
+  
+  --color-primary: #4B0082;
+  --color-accent: #F5A623;
+  --color-lavender: #F3F0FF;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-gray-900 font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-red {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.animate-pulse-red {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes bell-swing {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-10deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(0); }
+  100% { transform: rotate(0); }
+}
+
+.animate-bell-swing {
+  animation: bell-swing 2s infinite;
+  transform-origin: top center;
+}
