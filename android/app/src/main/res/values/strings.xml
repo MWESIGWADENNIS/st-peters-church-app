@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">St. Peter\'s Church</string>
+    <string name="title_activity_main">St. Peter\'s Church</string>
+    <string name="package_name">com.stpeterschurch.app</string>
+    <string name="custom_url_scheme">com.stpeterschurch.app</string>
+</resources>

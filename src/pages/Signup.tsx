@@ -91,10 +91,22 @@ export default function Signup() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: cleanUsername,
+          }
+        }
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Signup failed');
+      if (authError) {
+        console.error('Auth signup error:', authError);
+        throw authError;
+      }
+      
+      if (!authData.user) throw new Error('Signup failed - no user returned');
+
+      console.log('Auth user created:', authData.user.id);
 
       // 4. Create Profile
       const { error: profileError } = await supabase.from('users').insert({
@@ -106,19 +118,35 @@ export default function Signup() {
         role: 'member',
       });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw new Error(`Profile creation failed: ${profileError.message}`);
+      }
+
+      console.log('Profile created successfully');
 
       // 5. Add Ministries
       if (formData.ministries.length > 0) {
         const ministryInserts = formData.ministries.map(mId => ({
           user_id: authData.user!.id,
           ministry_id: mId,
+          status: 'pending'
         }));
-        await supabase.from('user_ministries').insert(ministryInserts);
+        
+        const { error: ministryError } = await supabase.from('user_ministries').insert(ministryInserts);
+        if (ministryError) {
+          console.error('Ministry association error:', ministryError);
+          // We don't throw here to allow the user to at least log in if profile was created
+          toast.error('Account created, but ministry requests failed. You can join them from your profile.');
+        }
       }
 
-      toast.success('Account created successfully!');
-      navigate('/home');
+      toast.success('Account created successfully! Redirecting...');
+      
+      // Small delay to ensure session is processed
+      setTimeout(() => {
+        navigate('/home');
+      }, 1500);
     } catch (error: any) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Signup failed');

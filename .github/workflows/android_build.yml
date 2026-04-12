@@ -1,0 +1,65 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate App Icons
+        run: |
+          mkdir -p android/app/src/main/res/mipmap-mdpi
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          mkdir -p android/app/src/main/res/mipmap-xhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          # Download the logo
+          curl -L "https://qgtgdhkdffajlyqxthvi.supabase.co/storage/v1/object/public/church-assets/church/logo-0.723806111151566.jpg" -o icon.jpg
+          # We use a simple copy for now, in a real env we'd use imagemagick to resize
+          # But Capacitor/Android will handle basic scaling if we put it in the right place
+          cp icon.jpg android/app/src/main/res/mipmap-mdpi/ic_launcher.jpg
+          cp icon.jpg android/app/src/main/res/mipmap-hdpi/ic_launcher.jpg
+          cp icon.jpg android/app/src/main/res/mipmap-xhdpi/ic_launcher.jpg
+          cp icon.jpg android/app/src/main/res/mipmap-xxhdpi/ic_launcher.jpg
+          cp icon.jpg android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.jpg
+
+      - name: Build Web App
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Capacitor Sync
+        run: npx cap sync
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
