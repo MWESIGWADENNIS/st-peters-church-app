@@ -20,8 +20,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
+
+      - name: Check Files
+        run: |
+          ls -la
+          if [ -d "android" ]; then echo "Android folder exists"; else echo "Android folder MISSING"; exit 1; fi
 
       - name: Install dependencies
         run: npm install
