@@ -43,11 +43,18 @@ export default function Home() {
   const [recentVideos, setRecentVideos] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(!isCacheValid('home'));
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async (force = false) => {
     // If cache is valid, we still fetch in background to refresh, but don't show loading
     const cacheValid = isCacheValid('home');
-    if (!cacheValid || force) setLoading(true);
+    if (!cacheValid || force) {
+      setLoading(true);
+      setError(null);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
     try {
       const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -64,6 +71,7 @@ export default function Home() {
       ];
 
       const results = await Promise.allSettled(requests);
+      clearTimeout(timeoutId);
       
       const [
         todayServicesResult,
@@ -72,6 +80,11 @@ export default function Home() {
         announcementsResult,
         videosResult
       ] = results;
+
+      // Check if all failed
+      if (results.every(r => r.status === 'rejected')) {
+        throw new Error('All requests failed. Please check your internet connection.');
+      }
 
       const todayServicesData = todayServicesResult.status === 'fulfilled' ? (todayServicesResult.value.data as any[]) : null;
       const dbData = dailyBreadResult.status === 'fulfilled' ? dailyBreadResult.value.data : null;
@@ -168,7 +181,8 @@ export default function Home() {
 
       } catch (error: any) {
         console.error('Error fetching home data:', error);
-        toast.error('Failed to refresh some data. Please check your connection.');
+        setError(error.message || 'Failed to refresh data. Please check your connection.');
+        toast.error('Connection issue. Some content might be missing.');
       } finally {
         setLoading(false);
       }
@@ -203,6 +217,19 @@ export default function Home() {
           <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
         </button>
       </div>
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex flex-col items-center gap-3">
+          <p className="text-sm text-red-600 font-medium text-center">{error}</p>
+          <button 
+            onClick={() => fetchData(true)}
+            className="px-4 py-2 bg-red-600 text-white text-xs font-black rounded-xl shadow-sm"
+          >
+            Retry Loading
+          </button>
+        </div>
+      )}
 
       {/* Rotating Banner */}
       <div className="relative h-48 rounded-2xl overflow-hidden shadow-lg bg-gray-100">

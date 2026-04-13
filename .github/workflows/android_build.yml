@@ -43,6 +43,15 @@ jobs:
           # Sync the web assets
           npx cap sync
 
+      - name: Check Configuration
+        run: |
+          if [ "${{ secrets.VITE_SUPABASE_URL }}" == "" ]; then
+            echo "::warning::VITE_SUPABASE_URL is not set in GitHub Secrets. The app will be built with placeholder data and will not work correctly."
+          fi
+          if [ "${{ secrets.VITE_SUPABASE_ANON_KEY }}" == "" ]; then
+            echo "::warning::VITE_SUPABASE_ANON_KEY is not set in GitHub Secrets. The app will be built with placeholder data and will not work correctly."
+          fi
+
       - name: Generate App Icons
         run: |
           mkdir -p android/app/src/main/res/mipmap-mdpi
@@ -50,24 +59,36 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xhdpi
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          # Download the icon from Google Drive
-          curl -L "https://drive.google.com/uc?export=download&id=1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R" -o icon.png
-          if [ ! -s icon.png ]; then
+          
+          # Download the icon from Google Drive with a smarter script
+          FILE_ID="1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R"
+          CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
+          curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILE_ID}" -o icon_raw
+          
+          if [ ! -s icon_raw ]; then
+            echo "Icon download failed. Trying direct link..."
+            curl -L "https://drive.google.com/uc?export=download&id=${FILE_ID}" -o icon_raw
+          fi
+
+          if [ ! -s icon_raw ]; then
             echo "Icon download failed or file is empty. Using fallback."
-            # Fallback to a generic icon if needed or fail the build
             exit 1
           fi
-          cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+          # Use ImageMagick to ensure it's a valid PNG and properly sized
+          # mdpi: 48x48, hdpi: 72x72, xhdpi: 96x96, xxhdpi: 144x144, xxxhdpi: 192x192
+          convert icon_raw -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert icon_raw -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert icon_raw -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert icon_raw -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert icon_raw -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          
           # Also set as round icons
-          cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
-          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
-          cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
-          cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
-          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xhdpi/ic_launcher.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
 
       - name: Build Android APK
         run: |

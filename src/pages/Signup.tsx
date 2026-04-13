@@ -170,7 +170,12 @@ export default function Signup() {
         <div className="text-center">
           <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg overflow-hidden">
             {churchSettings?.logo_url ? (
-              <img src={churchSettings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              <img 
+                src={churchSettings.logo_url} 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer"
+              />
             ) : (
               <span className="text-white text-2xl font-black">SP</span>
             )}

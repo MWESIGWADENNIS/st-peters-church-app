@@ -54,9 +54,10 @@ import AdminVideos from './pages/admin/Videos';
 import AdminMinistryManagement from './pages/admin/MinistryManagement';
 
 import { useDataStore } from './store/dataStore';
-import { supabase } from './lib/supabase';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { NotificationListener } from './components/NotificationListener';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AlertCircle } from 'lucide-react';
 
 export default function App() {
   const { initialize, loading: authLoading } = useAuthStore();
@@ -67,6 +68,7 @@ export default function App() {
     
     // Fetch church settings
     const fetchSettings = async () => {
+      if (!isSupabaseConfigured) return;
       try {
         const { data } = await supabase.from('church_settings').select('*').single();
         if (data) setChurchSettings(data);
@@ -92,7 +94,12 @@ export default function App() {
         <div className="text-center">
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce overflow-hidden shadow-xl">
             {churchSettings?.logo_url ? (
-              <img src={churchSettings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              <img 
+                src={churchSettings.logo_url} 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer"
+              />
             ) : (
               <span className="text-primary text-3xl font-black">SP</span>
             )}
@@ -100,6 +107,18 @@ export default function App() {
           <div className="animate-pulse text-white font-display text-xl font-black">
             {churchSettings?.church_name || "St. Peter's Church"}
           </div>
+          
+          {!isSupabaseConfigured && (
+            <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 max-w-xs mx-auto">
+              <div className="flex items-center gap-2 text-white mb-2 justify-center">
+                <AlertCircle className="w-5 h-5 text-accent" />
+                <span className="font-bold text-sm">Configuration Missing</span>
+              </div>
+              <p className="text-white/70 text-xs leading-relaxed">
+                Supabase URL and Key are not set. If you are using the APK, ensure you added the secrets to GitHub before building.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -106,7 +106,12 @@ export default function Login() {
         <div className="text-center">
           <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden">
             {churchSettings?.logo_url ? (
-              <img src={churchSettings.logo_url} alt="Logo" className="w-full h-full object-cover" />
+              <img 
+                src={churchSettings.logo_url} 
+                alt="Logo" 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer"
+              />
             ) : (
               <span className="text-white text-3xl font-black">SP</span>
             )}
