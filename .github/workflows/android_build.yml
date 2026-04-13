@@ -54,7 +54,7 @@ jobs:
 
       - name: Install ImageMagick
         # Required for icon generation
-        run: sudo apt-get update && sudo apt-get install -y imagemagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick libmagickcore-6.q16-6-extra
 
       - name: Generate App Icons
         run: |
@@ -67,25 +67,36 @@ jobs:
           # Download the icon from Google Drive with a smarter script
           FILE_ID="1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R"
           CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
-          curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILE_ID}" -o icon_raw
+          curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILE_ID}" -o icon_src
           
-          if [ ! -s icon_raw ]; then
+          if [ ! -s icon_src ]; then
             echo "Icon download failed. Trying direct link..."
-            curl -L "https://drive.google.com/uc?export=download&id=${FILE_ID}" -o icon_raw
+            curl -L "https://drive.google.com/uc?export=download&id=${FILE_ID}" -o icon_src
           fi
 
-          if [ ! -s icon_raw ]; then
+          if [ ! -s icon_src ]; then
             echo "Icon download failed or file is empty. Using fallback."
             exit 1
           fi
 
-          # Use ImageMagick to ensure it's a valid PNG and properly sized
+          # Rename to include extension so ImageMagick can detect the format
+          # We'll try to detect if it's a PNG or JPG
+          if file icon_src | grep -q "PNG"; then
+            mv icon_src icon.png
+          elif file icon_src | grep -q "JPEG"; then
+            mv icon_src icon.jpg
+          else
+            mv icon_src icon.png
+          fi
+
+          # Use ImageMagick to ensure it's properly sized
           # mdpi: 48x48, hdpi: 72x72, xhdpi: 96x96, xxhdpi: 144x144, xxxhdpi: 192x192
-          convert icon_raw -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert icon_raw -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert icon_raw -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert icon_raw -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert icon_raw -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          SRC_ICON=$(ls icon.png icon.jpg 2>/dev/null | head -n 1)
+          convert "$SRC_ICON" -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert "$SRC_ICON" -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert "$SRC_ICON" -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert "$SRC_ICON" -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert "$SRC_ICON" -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           
           # Also set as round icons
           cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
