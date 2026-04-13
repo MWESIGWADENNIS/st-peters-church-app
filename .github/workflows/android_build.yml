@@ -65,17 +65,33 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
           
           if [ ! -f "icon.png" ]; then
-            echo "Error: icon.png not found in project root. Please upload your icon to the project root and name it icon.png"
+            echo "Error: icon.png not found in project root."
             exit 1
           fi
 
+          if [ ! -s "icon.png" ]; then
+            echo "Error: icon.png is empty. Please re-upload your icon."
+            exit 1
+          fi
+
+          # Detect actual format to avoid header errors
+          # Sometimes users upload a JPG but name it .png
+          FORMAT=$(identify -format "%m" icon.png | tr '[:upper:]' '[:lower:]' | head -n 1)
+          echo "Detected actual format: $FORMAT"
+          
+          # Use the detected format explicitly
+          SRC="icon.png"
+          if [ "$FORMAT" != "png" ] && [ -n "$FORMAT" ]; then
+            mv icon.png "icon.${FORMAT}"
+            SRC="icon.${FORMAT}"
+          fi
+
           # Use ImageMagick to ensure it's properly sized
-          # mdpi: 48x48, hdpi: 72x72, xhdpi: 96x96, xxhdpi: 144x144, xxxhdpi: 192x192
-          convert icon.png -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert icon.png -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert icon.png -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert icon.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert icon.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert "$SRC" -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert "$SRC" -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert "$SRC" -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert "$SRC" -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert "$SRC" -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           
           # Also set as round icons
           cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
