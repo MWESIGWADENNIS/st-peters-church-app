@@ -64,27 +64,43 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
           
-          # Download the icon from Google Drive with a smarter script
+          # Download the icon from Google Drive with a more robust script
           FILE_ID="1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R"
-          CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
-          curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILE_ID}" -o icon_src
           
-          if [ ! -s icon_src ]; then
-            echo "Icon download failed. Trying direct link..."
+          # Try to get the confirmation code if it exists (for large files)
+          CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
+          
+          if [ -n "$CONFIRM" ]; then
+            echo "Large file detected, using confirmation code."
+            curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILE_ID}" -o icon_src
+          else
+            echo "Small file or direct download available."
             curl -L "https://drive.google.com/uc?export=download&id=${FILE_ID}" -o icon_src
           fi
-
+          
           if [ ! -s icon_src ]; then
-            echo "Icon download failed or file is empty. Using fallback."
+            echo "Icon download failed or file is empty."
             exit 1
           fi
 
-          # Use identify to detect the actual format and rename accordingly
-          # This avoids "improper image header" errors caused by wrong extensions
-          FORMAT=$(identify -format "%m" icon_src | tr '[:upper:]' '[:lower:]' | head -n 1)
-          echo "Detected image format: $FORMAT"
-          mv icon_src "icon.${FORMAT}"
-          SRC_ICON="icon.${FORMAT}"
+          # Use 'file' command to detect the actual format (more robust than identify for extensionless files)
+          MIME_TYPE=$(file --mime-type -b icon_src)
+          echo "Detected MIME type: $MIME_TYPE"
+          
+          case "$MIME_TYPE" in
+            image/png) EXT="png" ;;
+            image/jpeg) EXT="jpg" ;;
+            image/webp) EXT="webp" ;;
+            *) 
+              echo "Unknown MIME type, attempting to use identify as fallback..."
+              EXT=$(identify -format "%m" icon_src | tr '[:upper:]' '[:lower:]' | head -n 1)
+              if [ -z "$EXT" ]; then EXT="png"; fi # Final fallback
+              ;;
+          esac
+          
+          mv icon_src "icon.${EXT}"
+          SRC_ICON="icon.${EXT}"
+          echo "Final source icon: $SRC_ICON"
 
           # Use ImageMagick to ensure it's properly sized
           # mdpi: 48x48, hdpi: 72x72, xhdpi: 96x96, xxhdpi: 144x144, xxxhdpi: 192x192
