@@ -52,6 +52,9 @@ jobs:
             echo "::warning::VITE_SUPABASE_ANON_KEY is not set in GitHub Secrets. The app will be built with placeholder data and will not work correctly."
           fi
 
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
       - name: Generate App Icons
         run: |
           mkdir -p android/app/src/main/res/mipmap-mdpi
