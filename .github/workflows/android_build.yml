@@ -64,9 +64,9 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
           
-          # Check if icon.png exists and is not empty
-          if [ -f "icon.png" ] && [ -s "icon.png" ]; then
-            echo "Custom icon found. Detecting format..."
+          # Check if icon.png exists, is not empty, and is a valid image
+          if [ -f "icon.png" ] && [ -s "icon.png" ] && identify icon.png > /dev/null 2>&1; then
+            echo "Valid custom icon found. Detecting format..."
             FORMAT=$(identify -format "%m" icon.png | tr '[:upper:]' '[:lower:]' | head -n 1)
             echo "Detected actual format: $FORMAT"
             
@@ -76,7 +76,7 @@ jobs:
               SRC="icon.${FORMAT}"
             fi
           else
-            echo "Custom icon missing or empty. Generating fallback icon..."
+            echo "Custom icon missing, empty, or invalid. Generating fallback icon..."
             # Generate a blue icon with a white 'P' as fallback
             convert -size 512x512 xc:#3b82f6 -fill white -gravity center -pointsize 300 -draw "text 0,0 'P'" icon_fallback.png
             SRC="icon_fallback.png"
