@@ -273,7 +273,18 @@ INSERT INTO ministries (name, description, leader_name, practice_day, practice_t
 INSERT INTO livestream (is_live, title) VALUES (false, 'Sunday Main Service');
 
 -- Initial Church Settings
-INSERT INTO church_settings (church_name, parish) VALUES ('St. Peter''s Church of Uganda', 'Nkoma Parish');
+INSERT INTO church_settings (church_name, parish, archdeaconry, diocese, address, phone, email, history, logo_url) 
+VALUES (
+  'St. Peter''s Church of Uganda', 
+  'Nkoma Parish', 
+  'Mbale Urban Archdeaconry', 
+  'Mbale Diocese', 
+  'Nambozo Road, Nkoma, Mbale City, Uganda', 
+  '+256 700 000 000', 
+  'info@stpeters.app',
+  'St. Peter''s Church of Uganda, Nkoma Parish, has a rich history of serving the community in Mbale City. Founded on the principles of faith, hope, and love, the church continues to be a beacon of light for many.',
+  'https://drive.google.com/uc?export=download&id=1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R'
+);
 
 -- 4. RLS Policies
 

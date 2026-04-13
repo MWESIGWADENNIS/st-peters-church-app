@@ -50,12 +50,24 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xhdpi
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          curl -L "https://qgtgdhkdffajlyqxthvi.supabase.co/storage/v1/object/public/church-assets/church/logo-0.723806111151566.jpg" -o icon.jpg
-          cp icon.jpg android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          cp icon.jpg android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          cp icon.jpg android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          cp icon.jpg android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          cp icon.jpg android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          # Download the icon from Google Drive
+          curl -L "https://drive.google.com/uc?export=download&id=1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R" -o icon.png
+          if [ ! -s icon.png ]; then
+            echo "Icon download failed or file is empty. Using fallback."
+            # Fallback to a generic icon if needed or fail the build
+            exit 1
+          fi
+          cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          # Also set as round icons
+          cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp icon.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp icon.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
 
       - name: Build Android APK
         run: |
