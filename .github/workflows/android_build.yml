@@ -105,3 +105,5 @@ jobs:
         with:
           name: St-Peters-Church-App
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+# End of workflow
