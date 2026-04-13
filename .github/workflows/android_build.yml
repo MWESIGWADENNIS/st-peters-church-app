@@ -64,51 +64,25 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxhdpi
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
           
-          # Download the icon from Google Drive with a more robust script
-          FILE_ID="1z4iYWgYpUbCn7eQPWCDp9CjcInlR3W8R"
-          
-          # Try to get the confirmation code if it exists (for large files)
-          CONFIRM=$(curl -sc /tmp/gcookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')
-          
-          if [ -n "$CONFIRM" ]; then
-            echo "Large file detected, using confirmation code."
-            curl -Lb /tmp/gcookie "https://drive.google.com/uc?export=download&confirm=${CONFIRM}&id=${FILE_ID}" -o icon_src
-          else
-            echo "Small file or direct download available."
-            curl -L "https://drive.google.com/uc?export=download&id=${FILE_ID}" -o icon_src
-          fi
-          
-          if [ ! -s icon_src ]; then
-            echo "Icon download failed or file is empty."
+          if [ ! -f "icon.png" ]; then
+            echo "Error: icon.png not found in project root. Please upload your icon to the project root and name it icon.png"
             exit 1
           fi
 
-          # Use 'file' command to detect the actual format (more robust than identify for extensionless files)
-          MIME_TYPE=$(file --mime-type -b icon_src)
-          echo "Detected MIME type: $MIME_TYPE"
-          
-          case "$MIME_TYPE" in
-            image/png) EXT="png" ;;
-            image/jpeg) EXT="jpg" ;;
-            image/webp) EXT="webp" ;;
-            *) 
-              echo "Unknown MIME type, attempting to use identify as fallback..."
-              EXT=$(identify -format "%m" icon_src | tr '[:upper:]' '[:lower:]' | head -n 1)
-              if [ -z "$EXT" ]; then EXT="png"; fi # Final fallback
-              ;;
-          esac
-          
-          mv icon_src "icon.${EXT}"
-          SRC_ICON="icon.${EXT}"
-          echo "Final source icon: $SRC_ICON"
-
           # Use ImageMagick to ensure it's properly sized
           # mdpi: 48x48, hdpi: 72x72, xhdpi: 96x96, xxhdpi: 144x144, xxxhdpi: 192x192
-          convert "$SRC_ICON" -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert "$SRC_ICON" -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert "$SRC_ICON" -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert "$SRC_ICON" -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert "$SRC_ICON" -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert icon.png -resize 48x48 android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert icon.png -resize 72x72 android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert icon.png -resize 96x96 android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert icon.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert icon.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          
+          # Also set as round icons
+          cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xhdpi/ic_launcher.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
           
           # Also set as round icons
           cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
