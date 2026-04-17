@@ -25,14 +25,29 @@ export default function AdminAnnouncements() {
   }, []);
 
   const fetchAnnouncements = async () => {
+    const { isSupabaseConfigured } = await import('../../lib/supabase');
+    if (!isSupabaseConfigured) return;
+
     setLoading(true);
-    const { data } = await supabase
-      .from('announcements')
-      .select('*')
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false });
-    if (data) setAnnouncements(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      if (data) setAnnouncements(data);
+    } catch (err: any) {
+      console.error('Error fetching announcements:', err);
+      let message = 'Failed to load announcements';
+      if (err.message?.includes('Failed to fetch')) {
+        message = 'Connection error. Please check your internet or Supabase configuration.';
+      }
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

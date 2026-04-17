@@ -177,7 +177,6 @@ export default function AdminVideos() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this video?')) return;
     try {
       const { error } = await supabase.from('church_videos').delete().eq('id', id);
       if (error) throw error;
@@ -246,17 +245,18 @@ export default function AdminVideos() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">YouTube URL (Optional)</label>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Video Link (YouTube/TikTok/Drive)</label>
               <div className="relative">
                 <input
                   type="url"
                   value={formData.youtube_url}
                   onChange={e => setFormData({ ...formData, youtube_url: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="https://youtube.com/watch?v=..."
+                  placeholder="Paste YouTube, TikTok, or Google Drive link here..."
                 />
                 <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
+              <p className="text-[9px] text-gray-400 italic mt-1 ml-1">Supports: youtube.com, tiktok.com, drive.google.com</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

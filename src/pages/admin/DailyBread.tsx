@@ -56,6 +56,14 @@ export default function AdminDailyBread() {
           }
           throw error;
         }
+
+        // Notify all users
+        await supabase.rpc('notify_all_users', {
+          notif_title: 'New Daily Bread!',
+          notif_body: `Today's devotion: ${formData.title}`,
+          notif_type: 'daily_bread'
+        });
+
         toast.success('Devotion posted!');
       }
       setShowForm(false);

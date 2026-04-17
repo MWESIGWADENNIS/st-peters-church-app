@@ -16,14 +16,22 @@ import {
   Check,
   X,
   ChevronDown,
-  Clock
+  Clock,
+  Gift,
+  AlertCircle
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
 
 export default function Profile() {
   const { user, profile, fetchProfile, signOut } = useAuthStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: '',
+    confirmPassword: '',
+  });
   const [zones, setZones] = useState<any[]>([]);
   const [ministries, setMinistries] = useState<any[]>([]);
   const [userMinistries, setUserMinistries] = useState<any[]>([]);
@@ -31,6 +39,7 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
+    dateOfBirth: '',
     zoneId: '',
   });
 
@@ -39,6 +48,7 @@ export default function Profile() {
       setFormData({
         fullName: profile.full_name || '',
         phone: profile.phone || '',
+        dateOfBirth: profile.date_of_birth || '',
         zoneId: profile.zone_id || '',
       });
     }
@@ -71,6 +81,7 @@ export default function Profile() {
         .update({
           full_name: formData.fullName,
           phone: formData.phone,
+          date_of_birth: formData.dateOfBirth,
           zone_id: formData.zoneId,
         })
         .eq('id', user.id);
@@ -81,6 +92,64 @@ export default function Profile() {
       toast.success('Profile updated successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update profile.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.newPassword.length < 6) {
+      return toast.error('Password must be at least 6 characters long.');
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return toast.error('Passwords do not match.');
+    }
+
+    setLoading(true);
+    console.log('Starting password update...');
+    
+    try {
+      const updatePromise = supabase.auth.updateUser({
+        password: passwordForm.newPassword
+      });
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Password update timed out. This can happen on slow connections. Your password might have still updated, please try logging out and back in if this persists.')), 30000)
+      );
+
+      const { data, error } = await Promise.race([updatePromise, timeoutPromise]) as any;
+
+      if (error) {
+        console.error('Password update error:', error);
+        throw error;
+      }
+
+      console.log('Password updated successfully:', data);
+      toast.success('Hooray! Your new password is set! Your sanctuary account is now even more secure. 🙏', {
+        icon: '🎉',
+        duration: 6000,
+        style: {
+          borderRadius: '1.5rem',
+          background: '#fff',
+          color: '#333',
+          fontWeight: 'bold',
+          border: '2px solid #f0fdf4',
+          padding: '16px'
+        }
+      });
+      setIsPasswordModalOpen(false);
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      console.error('Final catch error:', error);
+      if (error.message === 'New password should be different from the old password.') {
+        toast.error('Your new password must be different from your current one. Please choose a unique password.', {
+          icon: '🔄',
+          duration: 5000
+        });
+      } else {
+        toast.error(error.message || 'Failed to change password.');
+      }
     } finally {
       setLoading(false);
     }
@@ -245,6 +314,19 @@ export default function Profile() {
 
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
+                <Gift className="w-3 h-3" /> Date of Birth
+              </label>
+              <input
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={e => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-gray-700"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
                 <MapPin className="w-3 h-3" /> Your Zone
               </label>
               <div className="relative">
@@ -326,7 +408,7 @@ export default function Profile() {
 
         <div className="pt-4 space-y-4">
           <button
-            onClick={() => toast('Please contact the church admin to change your password.')}
+            onClick={() => setIsPasswordModalOpen(true)}
             className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl flex items-center justify-center gap-2 border border-gray-100"
           >
             <Lock className="w-5 h-5" /> Change Password
@@ -343,6 +425,84 @@ export default function Profile() {
           </button>
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      <AnimatePresence>
+        {isPasswordModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPasswordModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[2.5rem] p-8 shadow-2xl space-y-6"
+            >
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Lock className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-black text-primary">Change Password</h2>
+                <p className="text-xs text-gray-500 font-medium mt-2 leading-relaxed px-4">
+                  Choose a new strong password for your sanctuary account.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none transition-all font-medium"
+                    placeholder="At least 6 characters"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 rounded-2xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none transition-all font-medium"
+                    placeholder="Repeat new password"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPasswordModalOpen(false)}
+                    className="flex-1 py-4 bg-gray-50 text-gray-600 font-black rounded-2xl uppercase tracking-widest text-[10px]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 py-4 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/20 uppercase tracking-widest text-[10px] disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                    ) : (
+                      'Update'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

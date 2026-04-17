@@ -33,6 +33,18 @@ const isDirectVideo = (url: string) => {
   return url.toLowerCase().match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
 };
 
+// TikTok ID extraction
+const getTikTokId = (url: string) => {
+  const match = url.match(/video\/(\d+)/) || url.match(/v\/(\d+)/);
+  return match ? match[1] : null;
+};
+
+// Google Drive ID extraction
+const getGoogleDriveId = (url: string) => {
+  const match = url.match(/\/d\/([-\w]{25,})/) || url.match(/id=([-\w]{25,})/);
+  return match ? match[1] : null;
+};
+
 export default function VideoDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -48,6 +60,8 @@ export default function VideoDetail() {
   const commentEndRef = useRef<HTMLDivElement>(null);
 
   const youtubeId = video?.youtube_url ? getYoutubeId(video.youtube_url) : null;
+  const tiktokId = video?.youtube_url ? getTikTokId(video.youtube_url) : null;
+  const googleDriveId = video?.youtube_url ? getGoogleDriveId(video.youtube_url) : null;
   const directUrl = video?.video_url && isDirectVideo(video.video_url) ? video.video_url : null;
 
   useEffect(() => {
@@ -220,8 +234,14 @@ export default function VideoDetail() {
         </button>
       </div>
 
-      {/* Video Player Section */}
-      <div className="relative aspect-video bg-black w-full shadow-2xl overflow-hidden">
+      <div className={cn(
+        "relative bg-black w-full shadow-2xl overflow-hidden mx-auto transition-all duration-500",
+        tiktokId 
+          ? "aspect-[9/16] max-w-[320px] rounded-[3rem] border-[12px] border-gray-900 my-8 shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
+          : googleDriveId && video?.youtube_url?.includes('drive.google.com')
+            ? "aspect-video"
+            : "aspect-video"
+      )}>
         {!isPlaying ? (
           <div 
             className="absolute inset-0 cursor-pointer group"
@@ -254,6 +274,22 @@ export default function VideoDetail() {
                 title={video.title}
                 className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : tiktokId ? (
+              <iframe
+                src={`https://www.tiktok.com/embed/${tiktokId}`}
+                title={video.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : googleDriveId && video?.youtube_url?.includes('drive.google.com') ? (
+              <iframe
+                src={`https://drive.google.com/file/d/${googleDriveId}/preview`}
+                title={video.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : directUrl ? (

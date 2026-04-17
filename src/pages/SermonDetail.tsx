@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ChevronLeft, Share2, User, Calendar, BookOpen, Eye, RotateCcw, RotateCw, Maximize, Play } from 'lucide-react';
+import { ChevronLeft, Share2, User, Calendar, BookOpen, Eye, RotateCcw, RotateCw, Maximize, Play, MessageCircle, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { motion } from 'motion/react';
@@ -18,10 +18,17 @@ const isDirectVideo = (url: string) => {
   return url.toLowerCase().match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i);
 };
 
+// Google Drive ID extraction
+const getGoogleDriveId = (url: string) => {
+  const match = url.match(/\/d\/([-\w]{25,})/) || url.match(/id=([-\w]{25,})/);
+  return match ? match[1] : null;
+};
+
 export default function SermonDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [sermon, setSermon] = useState<any>(null);
+  const [relatedSermons, setRelatedSermons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const playerRef = React.useRef<any>(null);
@@ -36,6 +43,7 @@ export default function SermonDetail() {
   };
 
   const youtubeId = getYoutubeId(sermon?.youtube_url || sermon?.media_url || '');
+  const googleDriveId = getGoogleDriveId(sermon?.youtube_url || sermon?.media_url || '');
   const directUrl = sermon?.media_url && isDirectVideo(sermon.media_url) ? sermon.media_url : null;
 
   const handleSkip = (seconds: number) => {
@@ -64,7 +72,7 @@ export default function SermonDetail() {
       try {
         const fetchPromise = supabase
           .from('sermons')
-          .select('*')
+          .select('*, sermon_series(id, title)')
           .eq('id', id)
           .single();
 
@@ -82,6 +90,21 @@ export default function SermonDetail() {
           // Increment views
           const currentViews = typeof data.views === 'number' && !isNaN(data.views) ? data.views : 0;
           await supabase.from('sermons').update({ views: currentViews + 1 }).eq('id', id);
+
+          // Fetch related sermons (same series or recent)
+          let relatedQuery = supabase
+            .from('sermons')
+            .select('*, sermon_series(title)')
+            .neq('id', id)
+            .order('sermon_date', { ascending: false })
+            .limit(5);
+
+          if (data.series_id) {
+            relatedQuery = relatedQuery.eq('series_id', data.series_id);
+          }
+
+          const { data: relatedData } = await relatedQuery;
+          if (relatedData) setRelatedSermons(relatedData);
         }
       } catch (err: any) {
         console.error('Unexpected error:', err);
@@ -117,6 +140,11 @@ export default function SermonDetail() {
     }
   };
 
+  const handleWhatsAppShare = () => {
+    const text = encodeURIComponent(`*Sermon: ${sermon.title}*\n\nPreached by: ${sermon.preacher || 'Church Minister'}\n\nWatch/Listen here: ${window.location.href}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
   if (loading) return <div className="p-12 text-center animate-pulse">Loading sermon...</div>;
   if (!sermon) return <div className="p-12 text-center">Sermon not found.</div>;
 
@@ -131,14 +159,19 @@ export default function SermonDetail() {
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
           <ChevronLeft className="w-6 h-6 text-gray-600" />
         </button>
-        <button onClick={handleShare} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-          <Share2 className="w-5 h-5 text-gray-600" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={handleWhatsAppShare} className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-full transition-colors">
+            <MessageCircle className="w-5 h-5 fill-emerald-500" />
+          </button>
+          <button onClick={handleShare} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
+            <Share2 className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
       </div>
 
       {/* Media Player */}
       <div ref={playerContainerRef} className="aspect-video bg-black w-full relative group overflow-hidden shadow-2xl">
-        {!isPlaying && (youtubeId || directUrl) ? (
+        {!isPlaying && (youtubeId || directUrl || googleDriveId) ? (
           <div 
             className="absolute inset-0 cursor-pointer group z-10"
             onClick={() => setIsPlaying(true)}
@@ -160,6 +193,16 @@ export default function SermonDetail() {
               src={`https://www.youtube.com/embed/${youtubeId}?modestbranding=1&rel=0&showinfo=0&autoplay=${isPlaying ? 1 : 0}`}
               className="absolute inset-0 w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              title={sermon.title}
+            ></iframe>
+          </div>
+        ) : googleDriveId ? (
+          <div className="w-full h-full relative">
+            <iframe
+              src={`https://drive.google.com/file/d/${googleDriveId}/preview`}
+              className="absolute inset-0 w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               title={sermon.title}
             ></iframe>
@@ -225,11 +268,21 @@ export default function SermonDetail() {
           <h1 className="text-2xl font-display font-black text-gray-900 leading-tight">
             {sermon.title}
           </h1>
-          {sermon.bible_reference && (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-lavender text-primary rounded-lg text-sm font-bold">
-              <BookOpen className="w-4 h-4" /> {sermon.bible_reference}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {sermon.bible_reference && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-lavender text-primary rounded-lg text-sm font-bold">
+                <BookOpen className="w-4 h-4" /> {sermon.bible_reference}
+              </div>
+            )}
+            {sermon.sermon_series && (
+              <button 
+                onClick={() => navigate(`/sermons/series/${sermon.sermon_series.id}`)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-sm font-bold"
+              >
+                <Layers className="w-4 h-4" /> {sermon.sermon_series.title}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Preacher Info */}
@@ -251,8 +304,51 @@ export default function SermonDetail() {
           </p>
         </div>
 
+        {/* Related Sermons */}
+        {relatedSermons.length > 0 && (
+          <div className="pt-6 space-y-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="font-black text-gray-900 uppercase text-xs tracking-widest">
+                {sermon.series_id ? 'More from this Series' : 'Recent Sermons'}
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {relatedSermons.map((related) => (
+                <button
+                  key={related.id}
+                  onClick={() => {
+                    navigate(`/sermons/${related.id}`);
+                    window.scrollTo(0, 0);
+                  }}
+                  className="w-full flex gap-3 p-2 bg-gray-50 rounded-2xl border border-transparent hover:border-primary/10 transition-all text-left group"
+                >
+                  <div className="w-24 aspect-video bg-gray-200 rounded-xl overflow-hidden flex-shrink-0 relative">
+                    <img 
+                      src={related.thumbnail_url || `https://picsum.photos/seed/${related.id}/200/120`}
+                      alt={related.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      <Play className="w-4 h-4 text-white fill-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 py-1">
+                    <h3 className="text-xs font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                      {related.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                      <span>{format(new Date(related.sermon_date), 'MMM d, yyyy')}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/sermons')}
           className="w-full py-4 border-2 border-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-50 transition-all"
         >
           Back to Sermons

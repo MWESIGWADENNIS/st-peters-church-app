@@ -194,7 +194,16 @@ CREATE TABLE schools (
   photo_url TEXT,
   chapel_day TEXT,
   chapel_time TEXT,
+  patron_name TEXT,
   minister_name TEXT,
+  motto TEXT,
+  vision TEXT,
+  mission TEXT,
+  contact_person TEXT,
+  contact_phone TEXT,
+  activities TEXT,
+  website_url TEXT,
+  student_count INTEGER,
   is_church_school BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -350,6 +359,9 @@ BEGIN
     SELECT 1 FROM users
     WHERE id = auth.uid()
     AND role = 'admin'
+  ) OR (
+    auth.jwt() ->> 'email' = 'dmwesigwa200@gmail.com' 
+    AND (auth.jwt() ->> 'email_verified')::boolean = true
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -363,6 +375,36 @@ BEGIN
   FROM users;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC to notify a specific user
+CREATE OR REPLACE FUNCTION notify_user(target_user_id UUID, notif_title TEXT, notif_body TEXT, notif_type TEXT)
+RETURNS VOID AS $$
+BEGIN
+  INSERT INTO notifications (user_id, title, body, type)
+  VALUES (target_user_id, notif_title, notif_body, notif_type);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Enable Realtime for notifications
+ALTER TABLE notifications REPLICA IDENTITY FULL;
+
+-- Add notifications to the realtime publication
+-- We use a DO block to handle cases where the publication might not exist or the table is already added
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' 
+    AND schemaname = 'public' 
+    AND tablename = 'notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+  END IF;
+END $$;
 
 -- Apply Admin Policies to all tables
 CREATE POLICY "Admins can do everything on zones" ON zones FOR ALL TO authenticated USING (is_admin());
@@ -380,7 +422,7 @@ CREATE POLICY "Admins can do everything on prayer_requests" ON prayer_requests F
 CREATE POLICY "Admins can do everything on livestream" ON livestream FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY "Admins can do everything on notifications" ON notifications FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY "Admins can do everything on leadership" ON leadership FOR ALL TO authenticated USING (is_admin());
-CREATE POLICY "Admins can do everything on schools" ON schools FOR ALL TO authenticated USING (is_admin());
+CREATE POLICY "Admins can do everything on schools" ON schools FOR ALL TO authenticated USING (is_admin()) WITH CHECK (is_admin());
 CREATE POLICY "Admins can do everything on choir_videos" ON choir_videos FOR ALL TO authenticated USING (is_admin());
 CREATE POLICY "Admins can do everything on church_videos" ON church_videos FOR ALL TO authenticated USING (is_admin());
 

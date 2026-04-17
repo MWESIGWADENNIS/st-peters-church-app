@@ -1,10 +1,10 @@
 {
-  "name": "react-example",
+  "name": "st-peters-church-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -31,10 +31,13 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "react-player": "^3.4.0",
     "react-router-dom": "^7.14.0",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.5.0",
     "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.2.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

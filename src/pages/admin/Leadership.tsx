@@ -15,6 +15,7 @@ export default function AdminLeadership() {
     full_name: '',
     role: '',
     bio: '',
+    phone: '',
     photo_url: '',
     order_index: 0,
     is_active: true
@@ -25,13 +26,20 @@ export default function AdminLeadership() {
   }, []);
 
   const fetchLeaders = async () => {
+    if (!supabase) return;
     setLoading(true);
-    const { data } = await supabase
-      .from('leadership')
-      .select('*')
-      .order('order_index', { ascending: true });
-    if (data) setLeaders(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('leadership')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      if (data) setLeaders(data);
+    } catch (err) {
+      console.error('Error fetching leaders:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +57,7 @@ export default function AdminLeadership() {
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ full_name: '', role: '', bio: '', photo_url: '', order_index: 0, is_active: true });
+      setFormData({ full_name: '', role: '', bio: '', phone: '', photo_url: '', order_index: 0, is_active: true });
       fetchLeaders();
     } catch (error: any) {
       toast.error(error.message || 'Failed to save leader.');
@@ -154,6 +162,16 @@ export default function AdminLeadership() {
                 className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
                 placeholder="e.g. Parish Priest"
                 required
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Phone Number (Optional)</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
+                placeholder="e.g. 0700000000"
               />
             </div>
             <div>

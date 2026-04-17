@@ -25,7 +25,7 @@ type MediaType = 'youtube' | 'audio_upload' | 'video_upload';
 export default function AdminSermons() {
   const navigate = useNavigate();
   const [sermons, setSermons] = useState<any[]>([]);
-  const [leadership, setLeadership] = useState<any[]>([]);
+  const [series, setSeries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -43,6 +43,7 @@ export default function AdminSermons() {
     thumbnail_url: '',
     youtube_url: '',
     audio_url: '',
+    series_id: '',
   });
 
   useEffect(() => {
@@ -53,16 +54,25 @@ export default function AdminSermons() {
 
   useEffect(() => {
     fetchSermons();
+    fetchSeries();
   }, []);
 
   const fetchSermons = async () => {
     setLoading(true);
     const { data } = await supabase
       .from('sermons')
-      .select('*')
+      .select('*, sermon_series(title)')
       .order('sermon_date', { ascending: false });
     if (data) setSermons(data);
     setLoading(false);
+  };
+
+  const fetchSeries = async () => {
+    const { data } = await supabase
+      .from('sermon_series')
+      .select('*')
+      .order('title');
+    if (data) setSeries(data);
   };
 
   const compressImage = (file: File): Promise<Blob> => {
@@ -199,6 +209,7 @@ export default function AdminSermons() {
       media_url: mediaType === 'youtube' ? formData.youtube_url : formData.media_url,
       youtube_url: mediaType === 'youtube' ? formData.youtube_url : null,
       audio_url: mediaType === 'audio_upload' ? formData.audio_url : null,
+      series_id: formData.series_id || null,
       views: editingId ? undefined : 0 // Initialize views for new sermons
     };
 
@@ -260,6 +271,7 @@ export default function AdminSermons() {
       thumbnail_url: '',
       youtube_url: '',
       audio_url: '',
+      series_id: '',
     });
     setMediaType('youtube');
   };
@@ -275,6 +287,7 @@ export default function AdminSermons() {
       media_url: sermon.media_url || '',
       youtube_url: sermon.youtube_url || '',
       audio_url: sermon.audio_url || '',
+      series_id: sermon.series_id || '',
     });
     
     if (sermon.youtube_url) setMediaType('youtube');
@@ -356,14 +369,17 @@ export default function AdminSermons() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-1">
-                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Bible Reference</label>
-                <input
-                  type="text"
-                  value={formData.bible_reference}
-                  onChange={e => setFormData({ ...formData, bible_reference: e.target.value })}
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Sermon Series (Optional)</label>
+                <select
+                  value={formData.series_id}
+                  onChange={e => setFormData({ ...formData, series_id: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="e.g. John 3:16"
-                />
+                >
+                  <option value="">No Series</option>
+                  {series.map(s => (
+                    <option key={s.id} value={s.id}>{s.title}</option>
+                  ))}
+                </select>
               </div>
               <div className="col-span-1">
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Sermon Title</label>
@@ -376,6 +392,17 @@ export default function AdminSermons() {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Bible Reference</label>
+              <input
+                type="text"
+                value={formData.bible_reference}
+                onChange={e => setFormData({ ...formData, bible_reference: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
+                placeholder="e.g. John 3:16"
+              />
             </div>
 
             <div>
@@ -423,14 +450,15 @@ export default function AdminSermons() {
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
               {mediaType === 'youtube' ? (
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">YouTube URL</label>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Video Link (YouTube/TikTok/Drive)</label>
                   <input
                     type="url"
                     value={formData.youtube_url}
                     onChange={e => setFormData({ ...formData, youtube_url: e.target.value })}
                     className="w-full px-4 py-3 bg-white rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
-                    placeholder="https://youtube.com/watch?v=..."
+                    placeholder="Paste YouTube, TikTok, or Google Drive link here..."
                   />
+                  <p className="text-[9px] text-gray-400 italic">Supports: youtube.com, tiktok.com, drive.google.com</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -525,7 +553,15 @@ export default function AdminSermons() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-gray-800 truncate">{sermon.title}</h4>
-                <p className="text-[10px] text-primary font-bold uppercase tracking-widest">{sermon.preacher || 'Church Minister'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-primary font-bold uppercase tracking-widest">{sermon.preacher || 'Church Minister'}</p>
+                  {sermon.sermon_series?.title && (
+                    <>
+                      <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                      <p className="text-[10px] text-rose-600 font-bold uppercase tracking-widest">{sermon.sermon_series.title}</p>
+                    </>
+                  )}
+                </div>
                 <p className="text-[10px] text-gray-400 font-bold uppercase">{format(new Date(sermon.sermon_date), 'MMM dd, yyyy')}</p>
               </div>
               <div className="flex gap-1">

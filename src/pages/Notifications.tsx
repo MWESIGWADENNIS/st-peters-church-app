@@ -12,20 +12,24 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [lastChecked, setLastChecked] = useState<Date>(new Date());
+
   useEffect(() => {
     if (!user) return;
     fetchNotifications();
 
     // Subscribe to new notifications
     const channel = supabase
-      .channel('notifications_changes')
+      .channel('notifications_list_changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'notifications',
-        filter: `user_id=eq.${user.id}`
-      }, () => {
-        fetchNotifications();
+      }, (payload: any) => {
+        console.log('[NotificationsPage] Change detected:', payload);
+        if ((payload.new && payload.new.user_id === user.id) || (payload.old && payload.old.user_id === user.id)) {
+          fetchNotifications();
+        }
       })
       .subscribe();
 
@@ -35,23 +39,22 @@ export default function Notifications() {
   }, [user]);
 
   const fetchNotifications = async () => {
+    setLoading(true);
     try {
-      const fetchPromise = supabase
+      const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timed out')), 60000)
-      );
-
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
-      
       if (error) throw error;
-      if (data) setNotifications(data);
+      if (data) {
+        setNotifications(data);
+        setLastChecked(new Date());
+      }
     } catch (err) {
       console.error('Error fetching notifications:', err);
+      toast.error('Failed to load notifications');
     } finally {
       setLoading(false);
     }
@@ -105,19 +108,74 @@ export default function Notifications() {
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-50 rounded-full transition-colors">
             <ChevronLeft className="w-6 h-6 text-gray-600" />
           </button>
-          <h1 className="text-lg font-black text-primary">Notifications</h1>
+          <div>
+            <h1 className="text-lg font-black text-primary leading-none">Notifications</h1>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+              Refreshed: {format(lastChecked, 'HH:mm:ss')}
+            </p>
+          </div>
         </div>
-        {notifications.some(n => !n.is_read) && (
+        <div className="flex items-center gap-2">
+          {user?.role === 'admin' && (
+            <button 
+              onClick={async () => {
+                const { error } = await supabase.rpc('notify_user', {
+                  target_user_id: user.id,
+                  notif_title: '🔔 Manual Test',
+                  notif_body: 'Testing from the notifications page.',
+                  notif_type: 'general'
+                });
+                if (!error) {
+                  window.dispatchEvent(new CustomEvent('check-notifications'));
+                  toast.success('Test sent!');
+                }
+              }}
+              className="p-2 text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-colors"
+              title="Send Test"
+            >
+              <Bell className="w-5 h-5" />
+            </button>
+          )}
           <button 
-            onClick={markAllAsRead}
-            className="text-xs font-bold text-primary px-3 py-1 bg-lavender rounded-full"
+            onClick={() => {
+              sessionStorage.removeItem('toasted_notifications');
+              fetchNotifications();
+              toast.success('Refreshing...');
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95"
           >
-            Mark all read
+            <Clock className="w-4 h-4" />
+            Refresh
           </button>
+          {notifications.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={markAllAsRead}
+              className="text-[10px] font-black text-primary px-3 py-1.5 bg-lavender rounded-full uppercase tracking-widest"
+            >
+              Mark all read
+            </button>
+            <button 
+              onClick={async () => {
+                if (!confirm('Delete all notifications?')) return;
+                try {
+                  await supabase.from('notifications').delete().eq('user_id', user?.id);
+                  setNotifications([]);
+                  toast.success('Cleared all');
+                } catch (error) {
+                  toast.error('Failed to clear');
+                }
+              }}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
+    </div>
 
-      <div className="p-4 space-y-3">
+    <div className="p-4 space-y-3">
         {loading ? (
           Array(5).fill(0).map((_, i) => (
             <div key={i} className="h-24 bg-gray-50 rounded-2xl animate-pulse" />

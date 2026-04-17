@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Users, ChevronRight, Clock, MapPin, User } from 'lucide-react';
+import { Users, ChevronRight, Clock, MapPin, User, School } from 'lucide-react';
 
 import { useDataStore } from '../store/dataStore';
 
@@ -50,6 +50,36 @@ export default function Ministries() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
+        {/* Schools Ministry Featured Card */}
+        <Link
+          to="/schools"
+          className="group relative h-56 rounded-[2.5rem] overflow-hidden shadow-xl border border-gray-100 mb-2"
+        >
+          <div className="absolute inset-0 bg-primary">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/10 rounded-full -ml-24 -mb-24 blur-3xl" />
+          </div>
+          <div className="absolute inset-0 p-8 flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white">
+                <School className="w-8 h-8" />
+              </div>
+              <div className="px-4 py-1.5 bg-accent text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                Featured Outreach
+              </div>
+            </div>
+            <div>
+              <h3 className="text-2xl font-display font-black text-white leading-tight mb-2">Schools Ministry</h3>
+              <p className="text-white/70 text-sm font-medium leading-relaxed max-w-[240px]">
+                Impacting the next generation in our community schools.
+              </p>
+            </div>
+          </div>
+          <div className="absolute bottom-6 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary shadow-xl group-hover:scale-110 transition-transform">
+            <ChevronRight className="w-6 h-6" />
+          </div>
+        </Link>
+
         {loading ? (
           Array(5).fill(0).map((_, i) => (
             <div key={i} className="h-48 bg-gray-50 rounded-3xl animate-pulse" />

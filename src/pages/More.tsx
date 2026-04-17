@@ -14,7 +14,11 @@ import {
   LogOut,
   ChevronRight,
   Shield,
-  Video
+  Video,
+  Image as ImageIcon,
+  StickyNote,
+  Music,
+  Layers
 } from 'lucide-react';
 
 import { useDataStore } from '../store/dataStore';
@@ -32,15 +36,23 @@ export default function More() {
         { icon: Megaphone, label: 'Announcements', path: '/announcements', color: 'text-purple-600 bg-purple-50' },
         { icon: MessageSquare, label: 'Prayer Requests', path: '/prayer', color: 'text-blue-600 bg-blue-50' },
         { icon: BookOpen, label: 'Daily Bread', path: '/daily-bread', color: 'text-green-600 bg-green-50' },
-        { icon: Video, label: 'Church Gallery', path: '/gallery', color: 'text-rose-600 bg-rose-50' },
+        { icon: MessageSquare, label: 'Testimony Wall', path: '/testimonies', color: 'text-amber-600 bg-amber-50' },
+        { icon: StickyNote, label: 'Notice Board', path: '/notices', color: 'text-yellow-600 bg-yellow-50' },
+        { icon: ImageIcon, label: 'Media Gallery', path: '/gallery', color: 'text-emerald-600 bg-emerald-50' },
+      ]
+    },
+    {
+      title: 'Ministries & Media',
+      items: [
+        { icon: Music, label: 'Choir Schedule', path: '/ministries/choir/schedule', color: 'text-indigo-600 bg-indigo-50' },
+        { icon: Users, label: 'Ministries', path: '/ministries', color: 'text-teal-600 bg-teal-50' },
+        { icon: School, label: 'Schools Ministry', path: '/schools', color: 'text-sky-600 bg-sky-50' },
       ]
     },
     {
       title: 'About Us',
       items: [
         { icon: Info, label: `About ${churchSettings?.church_name || "St. Peter's"}`, path: '/about', color: 'text-gray-600 bg-gray-50' },
-        { icon: Users, label: 'Ministries', path: '/ministries', color: 'text-indigo-600 bg-indigo-50' },
-        { icon: School, label: 'Schools Ministry', path: '/schools', color: 'text-amber-600 bg-amber-50' },
       ]
     },
     {

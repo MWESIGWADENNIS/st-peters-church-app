@@ -45,13 +45,31 @@ export default function AdminEvents() {
   };
 
   const fetchEvents = async () => {
+    const { isSupabaseConfigured } = await import('../../lib/supabase');
+    if (!isSupabaseConfigured) return;
+    
     setLoading(true);
-    const { data } = await supabase
-      .from('events')
-      .select('*')
-      .order('event_date', { ascending: true });
-    if (data) setEvents(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          event_rsvp (count)
+        `)
+        .order('event_date', { ascending: true });
+      
+      if (error) throw error;
+      if (data) setEvents(data);
+    } catch (err: any) {
+      console.error('Error fetching events:', err);
+      let message = 'Failed to load events';
+      if (err.message?.includes('Failed to fetch')) {
+        message = 'Connection error. Please check your internet or Supabase configuration.';
+      }
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -249,7 +267,14 @@ export default function AdminEvents() {
               <span className="text-lg font-black leading-none">{format(new Date(event.event_date), 'dd')}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-gray-800 truncate">{event.title}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-gray-800 truncate">{event.title}</h4>
+                {event.event_rsvp?.[0]?.count > 0 && (
+                  <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 text-[8px] font-black rounded uppercase">
+                    {event.event_rsvp[0].count} Joined
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase">
                 <Clock className="w-3 h-3" /> {event.start_time.slice(0, 5)}
                 <span className="w-1 h-1 bg-gray-200 rounded-full" />

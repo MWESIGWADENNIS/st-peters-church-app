@@ -1,5 +1,5 @@
 {
   "name": "St. Peter's Church of Uganda",
   "description": "A mobile-first web application for St. Peter's Church of Uganda, Nkoma Parish, Mbale Diocese. Featuring real-time livestream updates, sermons, hymns, and member management.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["camera", "microphone"]
 }

@@ -2,57 +2,40 @@ import React, { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useDataStore } from '../store/dataStore';
+import { useNotificationStore } from '../store/notificationStore';
 import { toast } from 'react-hot-toast';
 import { Bell, Megaphone, Calendar, MessageSquare, PlayCircle, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
 export const NotificationListener: React.FC = () => {
   const { user } = useAuthStore();
   const { setUnreadCount } = useDataStore();
+  const { addNotification } = useNotificationStore();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const playNotificationSound = () => {
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.log('Audio play blocked by browser. Interaction required.'));
+      audioRef.current.play().catch(() => {
+        // Silently fail if audio is blocked by browser
+        console.log('[Notifications] Audio playback blocked by browser - showing visual only');
+      });
     }
   };
 
   const showNotificationToast = (notification: any) => {
-    toast.custom((t) => (
-      <div
-        className={`${
-          t.visible ? 'animate-enter' : 'animate-leave'
-        } max-w-md w-full bg-white shadow-2xl rounded-3xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border-2 border-primary/10 transition-all duration-300 hover:scale-[1.02]`}
-      >
-        <div className="flex-1 w-0 p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0 pt-0.5">
-              <div className="w-10 h-10 bg-lavender rounded-xl flex items-center justify-center text-primary shadow-inner">
-                {getIcon(notification.type)}
-              </div>
-            </div>
-            <div className="ml-3 flex-1">
-              <p className="text-sm font-black text-gray-900">
-                {notification.title}
-              </p>
-              <p className="mt-1 text-xs font-medium text-gray-500 line-clamp-2 leading-relaxed">
-                {notification.body}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex border-l border-gray-100">
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-xs font-black text-primary hover:bg-gray-50 focus:outline-none transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    ), { duration: 6000 });
+    console.log('[Notifications] Showing notification:', notification.title);
+    
+    // Custom overlay store (Matches app theme)
+    addNotification({
+      id: notification.id || Math.random().toString(),
+      title: notification.title,
+      body: notification.body,
+      type: notification.type,
+      created_at: notification.created_at || new Date().toISOString()
+    });
   };
 
   const fetchUnreadCount = async () => {
@@ -111,61 +94,88 @@ export const NotificationListener: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!user) return;
+    console.log('[Notifications] Listener mounted. User:', user?.id);
+    if (!user) {
+      console.log('[Notifications] No user found, skipping subscription.');
+      return;
+    }
 
     // Initialize audio
     audioRef.current = new Audio(NOTIFICATION_SOUND);
     audioRef.current.volume = 0.5;
 
     // Initial fetch
+    console.log('[Notifications] Performing initial fetch...');
     fetchUnreadCount();
     catchUpNotifications();
 
     // Polling fallback (every 30 seconds)
     const pollInterval = setInterval(() => {
+      console.log('[Notifications] Polling fallback check...');
       fetchUnreadCount();
       catchUpNotifications();
     }, 30000);
 
-    const channel = supabase
-      .channel(`user-notifications-${user.id}`)
+    // Listen for manual check requests
+    const handleManualCheck = () => {
+      console.log('[Notifications] Manual check triggered');
+      fetchUnreadCount();
+      catchUpNotifications();
+    };
+    window.addEventListener('check-notifications', handleManualCheck);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Notifications] App visible, re-syncing...');
+        fetchUnreadCount();
+        catchUpNotifications();
+      }
+    });
+
+    console.log(`[Notifications] Subscribing to all notification channels...`);
+    
+    // 1. Database Changes Channel
+    const dbChannel = supabase
+      .channel('db-notifications')
       .on(
         'postgres_changes',
-        {
-          event: '*', // Listen for all changes (INSERT for new, UPDATE for read status)
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'notifications' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const notification = payload.new;
+          if (payload.new.user_id === user.id) {
+            console.log('[Notifications] DB Insert received:', payload.new.title);
             playNotificationSound();
-            showNotificationToast(notification);
+            showNotificationToast(payload.new);
+            fetchUnreadCount();
           }
-          // Always refresh count on any change
-          fetchUnreadCount();
+        }
+      )
+      .subscribe();
+
+    // 2. Direct Broadcast Channel (Faster, bypasses DB)
+    const broadcastChannel = supabase
+      .channel('notification-system')
+      .on(
+        'broadcast',
+        { event: 'new-notification' },
+        (payload) => {
+          if (payload.payload.user_id === user.id) {
+            console.log('[Notifications] Broadcast received:', payload.payload.title);
+            playNotificationSound();
+            showNotificationToast(payload.payload);
+            fetchUnreadCount();
+          }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(dbChannel);
+      supabase.removeChannel(broadcastChannel);
       clearInterval(pollInterval);
+      window.removeEventListener('check-notifications', handleManualCheck);
     };
   }, [user]);
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'announcement': return <Megaphone className="w-5 h-5" />;
-      case 'event': return <Calendar className="w-5 h-5" />;
-      case 'sermon': return <MessageSquare className="w-5 h-5" />;
-      case 'live': return <PlayCircle className="w-5 h-5" />;
-      case 'ministry': return <CheckCircle2 className="w-5 h-5" />;
-      case 'video': return <PlayCircle className="w-5 h-5" />;
-      default: return <Bell className="w-5 h-5" />;
-    }
-  };
+  if (!user) return null;
 
   return null;
 };

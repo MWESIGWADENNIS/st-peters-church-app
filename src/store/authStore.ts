@@ -37,6 +37,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .single();
       
       if (!error) {
+        // Fallback for primary admin
+        const isPrimaryAdmin = 
+          get().user?.email === 'dmwesigwa200@gmail.com' || 
+          data?.username === 'dmwesigwa200' ||
+          data?.username === 'admin';
+          
+        if (isPrimaryAdmin) {
+          data.role = 'admin';
+        }
         set({ profile: data });
       }
     } catch (err) {

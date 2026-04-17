@@ -1,65 +1,98 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ChevronLeft, Calendar, Clock, MapPin, Share2, Info, Bell } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, MapPin, Share2, Info, Bell, Users, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import { useAuthStore } from '../store/authStore';
+import { cn } from '../lib/utils';
 
 export default function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [rsvpCount, setRsvpCount] = useState(0);
+  const [isRsvped, setIsRsvped] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
       if (!id) return;
       setLoading(true);
       try {
-        const fetchPromise = supabase.from('events').select('*').eq('id', id).single();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timed out')), 60000)
-        );
+        const { data, error } = await supabase.from('events').select('*').eq('id', id).single();
+        if (error) throw error;
+        setEvent(data);
 
-        const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+        // Fetch RSVP count
+        const { count } = await supabase.from('event_rsvp').select('*', { count: 'exact', head: true }).eq('event_id', id);
+        setRsvpCount(count || 0);
 
-        if (error) {
-          console.error('Error fetching event:', error);
-          toast.error('Could not load event');
-        } else if (data) {
-          setEvent(data);
+        // Check if user is RSVPed
+        if (user) {
+          console.log('[EventDetail] Checking RSVP for user:', user.id);
+          const { data: rsvp, error: rsvpError } = await supabase.from('event_rsvp').select('*').eq('event_id', id).eq('user_id', user.id).maybeSingle();
+          if (rsvpError) console.error('[EventDetail] RSVP Check Error:', rsvpError);
+          setIsRsvped(!!rsvp);
         }
       } catch (err: any) {
-        console.error('Unexpected error:', err);
-        toast.error(err.message || 'An unexpected error occurred');
+        console.error('Error fetching event:', err);
+        toast.error('Could not load event');
       } finally {
         setLoading(false);
       }
     };
     fetchEvent();
-  }, [id]);
+  }, [id, user]);
+
+  const handleRsvp = async () => {
+    if (!user) {
+      toast.error('Please login to RSVP');
+      return;
+    }
+
+    setRsvpLoading(true);
+    console.log('[EventDetail] Handling RSVP. Current state:', isRsvped);
+    try {
+      if (isRsvped) {
+        const { error } = await supabase.from('event_rsvp').delete().eq('event_id', id).eq('user_id', user.id);
+        if (error) throw error;
+        setIsRsvped(false);
+        setRsvpCount(prev => prev - 1);
+        toast.success('RSVP cancelled');
+      } else {
+        const { error } = await supabase.from('event_rsvp').insert({ event_id: id, user_id: user.id });
+        if (error) throw error;
+        setIsRsvped(true);
+        setRsvpCount(prev => prev + 1);
+        toast.success('See you there!');
+      }
+    } catch (err) {
+      console.error('[EventDetail] RSVP error:', err);
+      toast.error('Failed to update RSVP');
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
 
   const handleShare = async () => {
+    const shareData = {
+      title: event.title,
+      text: `Join us for ${event.title} at St. Peter's Church!`,
+      url: window.location.href,
+    };
+
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: event.title,
-          text: event.description,
-          url: window.location.href,
-        });
+        await navigator.share(shareData);
       } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          console.error('Share error:', error);
-          toast.error('Could not share content');
-        }
+        if (error.name !== 'AbortError') toast.error('Could not share');
       }
     } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        toast.success('Link copied!');
-      } catch (err) {
-        toast.error('Failed to copy link');
-      }
+      await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      toast.success('Link copied!');
     }
   };
 
@@ -70,7 +103,7 @@ export default function EventDetail() {
     <div className="min-h-screen bg-white pb-12">
       <div className="relative h-72">
         {event.image_url ? (
-          <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" />
+          <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
           <div className="w-full h-full bg-primary" />
         )}
@@ -96,6 +129,30 @@ export default function EventDetail() {
       </div>
 
       <div className="p-6 space-y-8">
+        <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary shadow-sm">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Attending</p>
+              <p className="font-black text-primary">{rsvpCount} people</p>
+            </div>
+          </div>
+          <button 
+            onClick={handleRsvp}
+            disabled={rsvpLoading}
+            className={cn(
+              "px-6 py-2 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-sm",
+              isRsvped 
+                ? "bg-white text-emerald-600 border-2 border-emerald-100" 
+                : "bg-primary text-white hover:bg-primary/90"
+            )}
+          >
+            {rsvpLoading ? '...' : isRsvped ? 'Going' : 'Join Event'}
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 gap-4">
           <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm">
@@ -138,9 +195,9 @@ export default function EventDetail() {
 
         <button 
           onClick={() => toast.success('Reminder set! We\'ll notify you before the event.')}
-          className="w-full py-4 bg-primary text-white font-black rounded-2xl shadow-lg flex items-center justify-center gap-2"
+          className="w-full py-4 border-2 border-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
         >
-          <Bell className="w-5 h-5" /> Remind Me
+          <Bell className="w-5 h-5" /> Set Reminder
         </button>
       </div>
     </div>

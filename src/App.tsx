@@ -35,6 +35,12 @@ import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import Videos from './pages/Videos';
 import VideoDetail from './pages/VideoDetail';
+import Testimonies from './pages/Testimonies';
+import Gallery from './pages/Gallery';
+import Notices from './pages/Notices';
+import SermonSeries from './pages/SermonSeries';
+import SermonSeriesDetail from './pages/SermonSeriesDetail';
+import ChoirSchedule from './pages/ChoirSchedule';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -52,11 +58,21 @@ import AdminMinistries from './pages/admin/Ministries';
 import AdminZones from './pages/admin/Zones';
 import AdminVideos from './pages/admin/Videos';
 import AdminMinistryManagement from './pages/admin/MinistryManagement';
+import AdminTestimonies from './pages/admin/Testimonies';
+import AdminNotices from './pages/admin/Notices';
+import AdminGallery from './pages/admin/Gallery';
+import AdminSermonSeries from './pages/admin/SermonSeries';
+import AdminChoirSchedule from './pages/admin/ChoirSchedule';
+import AdminSchools from './pages/admin/Schools';
+import AdminPasswordResets from './pages/admin/PasswordResets';
 
 import { useDataStore } from './store/dataStore';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { NotificationListener } from './components/NotificationListener';
+import { NotificationOverlay } from './components/NotificationOverlay';
+import { PermissionModal } from './components/PermissionModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { OfflineBanner } from './components/OfflineBanner';
 import { AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -87,6 +103,19 @@ export default function App() {
 
     return () => clearTimeout(timer);
   }, [initialize, setChurchSettings]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      // Trigger silent refresh of critical data
+      console.log('App back online, syncing data...');
+      // In a real app, you might call specific fetch functions here
+      // For now, we rely on the fact that components will re-fetch if needed
+      // or the user can pull to refresh.
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
 
   if (authLoading) {
     return (
@@ -128,7 +157,10 @@ export default function App() {
     <ErrorBoundary>
       <Router>
         <Toaster position="top-center" />
+        <OfflineBanner />
         <NotificationListener />
+        <NotificationOverlay />
+        <PermissionModal />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -160,8 +192,14 @@ export default function App() {
               <Route path="/today-service" element={<TodayService />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
-              <Route path="/gallery" element={<Videos />} />
-              <Route path="/gallery/:id" element={<VideoDetail />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/videos/:id" element={<VideoDetail />} />
+              <Route path="/testimonies" element={<Testimonies />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/notices" element={<Notices />} />
+              <Route path="/sermons/series" element={<SermonSeries />} />
+              <Route path="/sermons/series/:id" element={<SermonSeriesDetail />} />
+              <Route path="/ministries/choir/schedule" element={<ChoirSchedule />} />
             </Route>
           </Route>
 
@@ -182,6 +220,13 @@ export default function App() {
             <Route path="/admin/zones" element={<AdminZones />} />
             <Route path="/admin/videos" element={<AdminVideos />} />
             <Route path="/admin/ministry-management" element={<AdminMinistryManagement />} />
+            <Route path="/admin/testimonies" element={<AdminTestimonies />} />
+            <Route path="/admin/notices" element={<AdminNotices />} />
+            <Route path="/admin/gallery" element={<AdminGallery />} />
+            <Route path="/admin/sermon-series" element={<AdminSermonSeries />} />
+            <Route path="/admin/choir-schedule" element={<AdminChoirSchedule />} />
+            <Route path="/admin/schools" element={<AdminSchools />} />
+            <Route path="/admin/password-resets" element={<AdminPasswordResets />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/home" replace />} />

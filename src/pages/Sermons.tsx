@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Search, Play, Mic, ChevronRight, User, Calendar } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Search, Play, Mic, ChevronRight, User, Calendar, Layers } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 
 import { useDataStore } from '../store/dataStore';
 
 export default function Sermons() {
-  const { sermons: cachedSermons, setSermons, isCacheValid } = useDataStore();
+  const { sermons: cachedSermons, setSermons, isCacheValid, sermonSeries, setSermonSeries } = useDataStore();
   const [sermons, setLocalSermons] = useState<any[]>(cachedSermons);
   const [search, setSearch] = useState('');
   const [type, setType] = useState('All');
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
   const [loading, setLoading] = useState(!isCacheValid('sermons'));
 
   useEffect(() => {
@@ -23,13 +24,21 @@ export default function Sermons() {
       try {
         const { data } = await supabase
           .from('sermons')
-          .select('*')
+          .select('*, sermon_series(title)')
           .order('sermon_date', { ascending: false });
         
         if (data) {
           setSermons(data);
           setLocalSermons(data);
         }
+
+        const { data: seriesData } = await supabase
+          .from('sermon_series')
+          .select('*')
+          .eq('is_active', true)
+          .order('title');
+        
+        if (seriesData) setSermonSeries(seriesData);
       } catch (error) {
         console.error('Error fetching sermons:', error);
       } finally {
@@ -43,11 +52,13 @@ export default function Sermons() {
   const filteredSermons = sermons.filter(s => {
     const matchesSearch = s.title.toLowerCase().includes(search.toLowerCase()) || 
                          (s.preacher || '').toLowerCase().includes(search.toLowerCase()) ||
-                         s.bible_reference?.toLowerCase().includes(search.toLowerCase());
+                         s.bible_reference?.toLowerCase().includes(search.toLowerCase()) ||
+                         (s.sermon_series?.title || '').toLowerCase().includes(search.toLowerCase());
     const matchesType = type === 'All' || 
-                       (type === 'Video' && s.youtube_url) || 
+                       (type === 'Video' && (s.youtube_url || s.media_url)) || 
                        (type === 'Audio' && s.audio_url);
-    return matchesSearch && matchesType;
+    const matchesSeries = !selectedSeries || s.series_id === selectedSeries;
+    return matchesSearch && matchesType && matchesSeries;
   });
 
   return (
@@ -86,6 +97,39 @@ export default function Sermons() {
             </button>
           ))}
         </div>
+
+        {sermonSeries.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter by Series</label>
+              {selectedSeries && (
+                <button 
+                  onClick={() => setSelectedSeries(null)}
+                  className="text-[10px] font-bold text-primary uppercase"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+              {sermonSeries.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSelectedSeries(selectedSeries === s.id ? null : s.id)}
+                  className={cn(
+                    "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2",
+                    selectedSeries === s.id
+                      ? "bg-rose-600 text-white border-rose-600 shadow-md"
+                      : "bg-white text-gray-500 border-gray-100"
+                  )}
+                >
+                  <Layers className="w-3 h-3" />
+                  {s.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -120,22 +164,33 @@ export default function Sermons() {
                 </div>
               </div>
               <div className="p-4 space-y-3">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                  <Calendar className="w-3 h-3" />
-                  {format(new Date(sermon.sermon_date), 'MMM dd, yyyy')}
-                  {sermon.bible_reference && (
-                    <>
-                      <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                      <span className="text-primary">{sermon.bible_reference}</span>
-                    </>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                    <Calendar className="w-3 h-3" />
+                    {format(new Date(sermon.sermon_date), 'MMM dd, yyyy')}
+                  </div>
+                  {sermon.sermon_series?.title && (
+                    <div className="flex items-center gap-1 text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded-md">
+                      <Layers className="w-2.5 h-2.5" />
+                      {sermon.sermon_series.title}
+                    </div>
                   )}
                 </div>
+                
                 <h3 className="font-bold text-gray-900 leading-tight line-clamp-2">{sermon.title}</h3>
-                <div className="flex items-center gap-2 pt-1">
-                  <div className="w-6 h-6 rounded-full bg-lavender flex items-center justify-center overflow-hidden border border-primary/10">
-                    <User className="w-3 h-3 text-primary" />
+                
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-lavender flex items-center justify-center overflow-hidden border border-primary/10">
+                      <User className="w-3 h-3 text-primary" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">{sermon.preacher || 'Church Minister'}</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-600">{sermon.preacher || 'Church Minister'}</span>
+                  {sermon.bible_reference && (
+                    <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase">
+                      {sermon.bible_reference}
+                    </span>
+                  )}
                 </div>
               </div>
             </Link>
