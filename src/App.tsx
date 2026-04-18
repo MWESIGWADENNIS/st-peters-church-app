@@ -41,6 +41,7 @@ import Notices from './pages/Notices';
 import SermonSeries from './pages/SermonSeries';
 import SermonSeriesDetail from './pages/SermonSeriesDetail';
 import ChoirSchedule from './pages/ChoirSchedule';
+import Bible from './pages/Bible';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -65,6 +66,7 @@ import AdminSermonSeries from './pages/admin/SermonSeries';
 import AdminChoirSchedule from './pages/admin/ChoirSchedule';
 import AdminSchools from './pages/admin/Schools';
 import AdminPasswordResets from './pages/admin/PasswordResets';
+import AdminUsers from './pages/admin/Users';
 
 import { useDataStore } from './store/dataStore';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -200,6 +202,7 @@ export default function App() {
               <Route path="/sermons/series" element={<SermonSeries />} />
               <Route path="/sermons/series/:id" element={<SermonSeriesDetail />} />
               <Route path="/ministries/choir/schedule" element={<ChoirSchedule />} />
+              <Route path="/bible" element={<Bible />} />
             </Route>
           </Route>
 
@@ -208,25 +211,44 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             <Route path="/admin/livestream" element={<AdminLivestream />} />
-            <Route path="/admin/daily-bread" element={<AdminDailyBread />} />
-            <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route element={<ProtectedRoute permission="devotions" />}>
+              <Route path="/admin/daily-bread" element={<AdminDailyBread />} />
+            </Route>
+            <Route element={<ProtectedRoute permission="announcements" />}>
+              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+              <Route path="/admin/notices" element={<AdminNotices />} />
+            </Route>
+            <Route element={<ProtectedRoute permission="events" />}>
+              <Route path="/admin/events" element={<AdminEvents />} />
+            </Route>
             <Route path="/admin/leadership" element={<AdminLeadership />} />
             <Route path="/admin/hymns" element={<AdminHymns />} />
-            <Route path="/admin/prayer-requests" element={<AdminPrayerRequests />} />
-            <Route path="/admin/sermons" element={<AdminSermons />} />
+            <Route element={<ProtectedRoute permission="prayers" />}>
+              <Route path="/admin/prayer-requests" element={<AdminPrayerRequests />} />
+            </Route>
+            <Route element={<ProtectedRoute permission="sermons" />}>
+              <Route path="/admin/sermons" element={<AdminSermons />} />
+              <Route path="/admin/sermon-series" element={<AdminSermonSeries />} />
+            </Route>
             <Route path="/admin/services" element={<AdminServices />} />
-            <Route path="/admin/ministries" element={<AdminMinistries />} />
+            <Route element={<ProtectedRoute permission="ministries" />}>
+              <Route path="/admin/ministries" element={<AdminMinistries />} />
+              <Route path="/admin/choir-schedule" element={<AdminChoirSchedule />} />
+            </Route>
             <Route path="/admin/zones" element={<AdminZones />} />
             <Route path="/admin/videos" element={<AdminVideos />} />
             <Route path="/admin/ministry-management" element={<AdminMinistryManagement />} />
             <Route path="/admin/testimonies" element={<AdminTestimonies />} />
-            <Route path="/admin/notices" element={<AdminNotices />} />
-            <Route path="/admin/gallery" element={<AdminGallery />} />
-            <Route path="/admin/sermon-series" element={<AdminSermonSeries />} />
-            <Route path="/admin/choir-schedule" element={<AdminChoirSchedule />} />
-            <Route path="/admin/schools" element={<AdminSchools />} />
-            <Route path="/admin/password-resets" element={<AdminPasswordResets />} />
+            <Route element={<ProtectedRoute permission="gallery" />}>
+              <Route path="/admin/gallery" element={<AdminGallery />} />
+            </Route>
+            <Route element={<ProtectedRoute permission="schools" />}>
+              <Route path="/admin/schools" element={<AdminSchools />} />
+            </Route>
+            <Route element={<ProtectedRoute permission="users" />}>
+              <Route path="/admin/password-resets" element={<AdminPasswordResets />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+            </Route>
           </Route>
 
           <Route path="/" element={<Navigate to="/home" replace />} />

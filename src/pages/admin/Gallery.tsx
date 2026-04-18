@@ -39,6 +39,8 @@ export default function AdminGallery() {
     thumbnail_url: '' 
   });
   const [uploading, setUploading] = useState(false);
+  const [deleteAlbumId, setDeleteAlbumId] = useState<string | null>(null);
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
 
   const fetchAlbums = async () => {
     setLoading(true);
@@ -87,6 +89,7 @@ export default function AdminGallery() {
 
       if (error) throw error;
       toast.success('Item deleted');
+      setDeleteItemId(null);
       fetchAlbumItems(albumId);
       fetchAlbums();
     } catch (err) {
@@ -127,6 +130,7 @@ export default function AdminGallery() {
       if (error) throw error;
       
       toast.success('Album deleted');
+      setDeleteAlbumId(null);
       fetchAlbums();
     } catch (err) {
       toast.error('Failed to delete album');
@@ -329,13 +333,24 @@ export default function AdminGallery() {
                     >
                       Manage Items
                     </button>
-                    <button 
-                      onClick={() => handleDeleteAlbum(album.id)}
-                      className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-lg text-gray-600 hover:text-red-600 transition-colors"
-                      title="Delete Album"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {deleteAlbumId === album.id ? (
+                      <div className="absolute top-2 right-2 flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                        <button onClick={() => setDeleteAlbumId(null)} className="p-2 bg-white/90 backdrop-blur-sm rounded-lg text-gray-400">
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteAlbum(album.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                          Confirm
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setDeleteAlbumId(album.id)}
+                        className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-lg text-gray-600 hover:text-red-600 transition-colors"
+                        title="Delete Album"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
               </div>
               <div className="p-4">
@@ -397,14 +412,25 @@ export default function AdminGallery() {
                             <Play className="w-8 h-8 text-white fill-white" />
                           </div>
                         )}
-                        <div className="absolute top-2 right-2">
-                          <button 
-                            onClick={() => handleDeleteItem(item.id, selectedAlbumForItems.id)}
-                            className="p-2 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                          <div className="absolute top-2 right-2 flex flex-col gap-1">
+                            {deleteItemId === item.id ? (
+                              <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                                <button onClick={() => setDeleteItemId(null)} className="p-2 bg-white/90 backdrop-blur-sm rounded-lg text-gray-400 shadow-sm">
+                                  <X className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDeleteItem(item.id, selectedAlbumForItems.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg shadow-lg">
+                                  Yes
+                                </button>
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => setDeleteItemId(item.id)}
+                                className="p-2 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                       </div>
                     ))}
                   </div>

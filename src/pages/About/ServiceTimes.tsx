@@ -2,26 +2,46 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Clock, Calendar, Info } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { persistenceService } from '../../services/persistenceService';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 
 export default function ServiceTimes() {
   const navigate = useNavigate();
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isOnline = useNetworkStatus();
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   useEffect(() => {
     const fetchServices = async () => {
-      const { data } = await supabase
-        .from('services')
-        .select('*')
-        .order('day_of_week', { ascending: true })
-        .order('start_time', { ascending: true });
-      
-      if (data) setServices(data);
-      setLoading(false);
+      // Check cache first
+      const cached = await persistenceService.get('schedule');
+      if (cached?.length) {
+        setServices(cached);
+        setLoading(false);
+      }
+
+      if (!isOnline) return;
+
+      try {
+        const { data } = await supabase
+          .from('services')
+          .select('*')
+          .order('day_of_week', { ascending: true })
+          .order('start_time', { ascending: true });
+        
+        if (data) {
+          setServices(data);
+          await persistenceService.set('schedule', data);
+        }
+      } catch (err) {
+        console.error('Error fetching service times:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchServices();
-  }, []);
+  }, [isOnline]);
 
   return (
     <div className="min-h-screen bg-white pb-12">

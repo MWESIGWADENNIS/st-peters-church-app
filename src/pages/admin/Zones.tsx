@@ -22,6 +22,7 @@ export default function AdminZones() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newZoneName, setNewZoneName] = useState('');
   const [editName, setEditName] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchZones();
@@ -98,7 +99,6 @@ export default function AdminZones() {
   };
 
   const handleDeleteZone = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this zone? Users in this zone will have no zone assigned.')) return;
     try {
       const { error } = await supabase
         .from('zones')
@@ -108,6 +108,7 @@ export default function AdminZones() {
       if (error) throw error;
 
       setZones(prev => prev.filter(z => z.id !== id));
+      setDeleteConfirmId(null);
       toast.success('Zone deleted successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete zone');
@@ -211,23 +212,34 @@ export default function AdminZones() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => {
-                          setEditingId(zone.id);
-                          setEditName(zone.name || '');
-                        }}
-                        className="p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteZone(zone.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {deleteConfirmId === zone.id ? (
+                      <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                        <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-lg">
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteZone(zone.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => {
+                            setEditingId(zone.id);
+                            setEditName(zone.name || '');
+                          }}
+                          className="p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setDeleteConfirmId(zone.id)}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

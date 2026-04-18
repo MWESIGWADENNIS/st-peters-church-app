@@ -5,6 +5,7 @@ import {
   Trash2, 
   CheckCircle, 
   XCircle,
+  X,
   Clock,
   User,
   Heart,
@@ -23,6 +24,7 @@ export default function AdminTestimonies() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const fetchTestimonies = async () => {
     setLoading(true);
@@ -71,11 +73,11 @@ export default function AdminTestimonies() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this testimony?')) return;
     try {
       const { error } = await supabase.from('testimonies').delete().eq('id', id);
       if (error) throw error;
       toast.success('Testimony deleted');
+      setDeleteConfirmId(null);
       fetchTestimonies();
     } catch (err) {
       toast.error('Failed to delete testimony');
@@ -193,13 +195,24 @@ export default function AdminTestimonies() {
                         <CheckCircle className="w-5 h-5" />
                       </button>
                     )}
-                    <button 
-                      onClick={() => handleDelete(testimony.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    {deleteConfirmId === testimony.id ? (
+                      <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                        <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-lg">
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(testimony.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                          Confirm
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setDeleteConfirmId(testimony.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>

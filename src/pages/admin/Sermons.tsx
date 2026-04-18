@@ -31,6 +31,7 @@ export default function AdminSermons() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   const [mediaType, setMediaType] = useState<MediaType>('youtube');
   const [formData, setFormData] = useState({
@@ -299,11 +300,11 @@ export default function AdminSermons() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this sermon?')) return;
     try {
       const { error } = await supabase.from('sermons').delete().eq('id', id);
       if (error) throw error;
       toast.success('Deleted.');
+      setDeleteConfirmId(null);
       fetchSermons();
     } catch (error: any) {
       toast.error(error.message || 'Delete failed.');
@@ -564,14 +565,31 @@ export default function AdminSermons() {
                 </div>
                 <p className="text-[10px] text-gray-400 font-bold uppercase">{format(new Date(sermon.sermon_date), 'MMM dd, yyyy')}</p>
               </div>
-              <div className="flex gap-1">
-                <button onClick={() => handleEdit(sermon)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => handleDelete(sermon.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              {deleteConfirmId === sermon.id ? (
+                <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                  <button 
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="p-2 text-gray-400 bg-gray-50 rounded-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(sermon.id)}
+                    className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg shadow-lg shadow-red-200"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-1">
+                  <button onClick={() => handleEdit(sermon)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setDeleteConfirmId(sermon.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           ))
         ) : (

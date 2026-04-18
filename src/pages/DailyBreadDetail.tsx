@@ -7,6 +7,9 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useAuthStore } from '../store/authStore';
+import { getBibleLink } from '../utils/bibleLinkUtils';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { persistenceService } from '../services/persistenceService';
 
 export default function DailyBreadDetail() {
   const { id } = useParams();
@@ -16,15 +19,35 @@ export default function DailyBreadDetail() {
   const [loading, setLoading] = useState(true);
   const [reminderTime, setReminderTime] = useState<string | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const isOnline = useNetworkStatus();
 
   useEffect(() => {
     const fetchDevotion = async () => {
       if (!id) return;
       setLoading(true);
+
+      // Check cache first
+      const cached = await persistenceService.get('daily_bread');
+      const found = cached?.find((d: any) => d.id === id);
+      if (found) {
+        setDevotion(found);
+        setLoading(false);
+      }
+
+      if (!isOnline) return;
+
       try {
         const { data, error } = await supabase.from('daily_bread').select('*').eq('id', id).single();
         if (error) throw error;
         setDevotion(data);
+        
+        // Sync single item to cache if not already part of today's fetch
+        if (data) {
+          const allCached = await persistenceService.get('daily_bread') || [];
+          if (!allCached.find((d: any) => d.id === data.id)) {
+            await persistenceService.set('daily_bread', [...allCached, data]);
+          }
+        }
 
         if (user) {
           const { data: profile } = await supabase.from('users').select('reminder_time').eq('id', user.id).single();
@@ -185,9 +208,12 @@ export default function DailyBreadDetail() {
             <p className="text-primary font-black text-lg italic leading-relaxed">
               {devotion.verse_text || `"${devotion.bible_verse}"`}
             </p>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest text-right">
-              — {devotion.bible_verse}
-            </p>
+            <button 
+              onClick={() => navigate(getBibleLink(devotion.bible_verse))}
+              className="w-full flex items-center justify-end gap-2 text-xs font-black text-primary/60 uppercase tracking-widest hover:text-primary transition-colors"
+            >
+              Read in Bible — {devotion.bible_verse} <BookOpen className="w-3 h-3" />
+            </button>
           </div>
         </div>
 

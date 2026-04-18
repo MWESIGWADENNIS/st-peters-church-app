@@ -17,6 +17,11 @@ export default function Announcements() {
       const cacheValid = isCacheValid('announcements');
       if (!cacheValid) setLoading(true);
 
+      if (!navigator.onLine) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const fetchPromise = supabase
           .from('announcements')

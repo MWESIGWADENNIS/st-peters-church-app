@@ -9,6 +9,7 @@ import {
   Users, 
   School, 
   BookOpen, 
+  Book,
   Bell, 
   User, 
   LogOut,
@@ -32,6 +33,7 @@ export default function More() {
     {
       title: 'Church Life',
       items: [
+        { icon: Book, label: 'Holy Bible', path: '/bible', color: 'text-primary bg-primary/10' },
         { icon: Calendar, label: 'Events & Calendar', path: '/events', color: 'text-orange-600 bg-orange-50' },
         { icon: Megaphone, label: 'Announcements', path: '/announcements', color: 'text-purple-600 bg-purple-50' },
         { icon: MessageSquare, label: 'Prayer Requests', path: '/prayer', color: 'text-blue-600 bg-blue-50' },

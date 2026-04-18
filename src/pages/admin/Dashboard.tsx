@@ -17,6 +17,8 @@ import {
   ArrowLeft,
   MessageSquare,
   AlertCircle,
+  ShieldAlert,
+  User as UserIcon,
   Music,
   Clock,
   MapPin,
@@ -45,7 +47,7 @@ import { cn } from '../../lib/utils';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, profile, hasPermission } = useAuthStore();
   const [stats, setStats] = useState({
     members: 0,
     prayers: 0,
@@ -170,23 +172,26 @@ export default function AdminDashboard() {
   }, []);
 
   const adminModules = [
-    { icon: BookOpen, label: 'Daily Bread', path: 'daily-bread', color: 'bg-green-50 text-green-600', subtitle: 'Manage daily devotions and scriptures' },
-    { icon: Megaphone, label: 'Announcements', path: 'announcements', color: 'bg-purple-50 text-purple-600', subtitle: 'Post news and updates' },
-    { icon: Calendar, label: 'Events', path: 'events', color: 'bg-orange-50 text-orange-600', subtitle: 'Church calendar' },
-    { icon: MessageSquare, label: 'Testimonies', path: 'testimonies', color: 'bg-amber-50 text-amber-600', subtitle: 'Member stories' },
-    { icon: StickyNote, label: 'Notice Board', path: 'notices', color: 'bg-yellow-50 text-yellow-600' },
-    { icon: ImageIcon, label: 'Gallery', path: 'gallery', color: 'bg-emerald-50 text-emerald-600' },
-    { icon: Layers, label: 'Sermon Series', path: 'sermon-series', color: 'bg-rose-50 text-rose-600' },
-    { icon: Music, label: 'Choir Schedule', path: 'choir-schedule', color: 'bg-indigo-50 text-indigo-600' },
-    { icon: Users, label: 'Leadership', path: 'leadership', color: 'bg-blue-50 text-blue-600' },
-    { icon: Users, label: 'Ministry Requests', path: 'ministries', color: 'bg-teal-50 text-teal-600' },
-    { icon: School, label: 'Schools Ministry', path: 'schools', color: 'bg-cyan-50 text-cyan-600' },
-    { icon: MessageSquare, label: 'Prayer Requests', path: 'prayer-requests', color: 'bg-sky-50 text-sky-600' },
-    { icon: AlertCircle, label: 'Password Resets', path: 'password-resets', color: 'bg-red-50 text-red-600' },
-    { icon: Video, label: 'Sermons', path: 'sermons', color: 'bg-rose-50 text-rose-600' },
-    { icon: Clock, label: 'Services', path: 'services', color: 'bg-emerald-50 text-emerald-600' },
-    { icon: Settings, label: 'Settings', path: 'settings', color: 'bg-gray-50 text-gray-600' },
+    { icon: BookOpen, label: 'Daily Bread', path: 'daily-bread', color: 'bg-green-50 text-green-600', subtitle: 'Manage daily devotions and scriptures', permission: 'devotions' },
+    { icon: Megaphone, label: 'Announcements', path: 'announcements', color: 'bg-purple-50 text-purple-600', subtitle: 'Post news and updates', permission: 'announcements' },
+    { icon: Calendar, label: 'Events', path: 'events', color: 'bg-orange-50 text-orange-600', subtitle: 'Church calendar', permission: 'events' },
+    { icon: MessageSquare, label: 'Testimonies', path: 'testimonies', color: 'bg-amber-50 text-amber-600', subtitle: 'Member stories', permission: 'gallery' },
+    { icon: StickyNote, label: 'Notice Board', path: 'notices', color: 'bg-yellow-50 text-yellow-600', permission: 'announcements' },
+    { icon: ImageIcon, label: 'Gallery', path: 'gallery', color: 'bg-emerald-50 text-emerald-600', permission: 'gallery' },
+    { icon: Layers, label: 'Sermon Series', path: 'sermon-series', color: 'bg-rose-50 text-rose-600', permission: 'sermons' },
+    { icon: Music, label: 'Choir Schedule', path: 'choir-schedule', color: 'bg-indigo-50 text-indigo-600', permission: 'ministries' },
+    { icon: Users, label: 'Leadership', path: 'leadership', color: 'bg-blue-50 text-blue-600', permission: 'settings' },
+    { icon: Users, label: 'Ministry Requests', path: 'ministries', color: 'bg-teal-50 text-teal-600', permission: 'ministries' },
+    { icon: School, label: 'Schools Ministry', path: 'schools', color: 'bg-cyan-50 text-cyan-600', permission: 'schools' },
+    { icon: MessageSquare, label: 'Prayer Requests', path: 'prayer-requests', color: 'bg-sky-50 text-sky-600', permission: 'prayers' },
+    { icon: AlertCircle, label: 'Password Resets', path: 'password-resets', color: 'bg-red-50 text-red-600', permission: 'users' },
+    { icon: UserIcon, label: 'User Management', path: 'users', color: 'bg-indigo-50 text-indigo-600', subtitle: 'Manage roles and permissions', permission: 'users' },
+    { icon: Video, label: 'Sermons', path: 'sermons', color: 'bg-rose-50 text-rose-600', permission: 'sermons' },
+    { icon: Clock, label: 'Services', path: 'services', color: 'bg-emerald-50 text-emerald-600', permission: 'settings' },
+    { icon: Settings, label: 'Settings', path: 'settings', color: 'bg-gray-50 text-gray-600', permission: 'settings' },
   ];
+
+  const visibleModules = adminModules.filter(m => hasPermission(m.permission));
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -248,95 +253,97 @@ export default function AdminDashboard() {
         </div>
 
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Member Growth Chart */}
-          <div className="md:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" /> Member Growth
-              </h3>
-            </div>
-            <div className="h-64 w-full">
-              {loading ? (
-                <div className="h-full w-full flex flex-col justify-end gap-2 px-1 pb-4">
-                   <div className="flex items-end gap-4 h-full">
-                     {[1,2,3,4,5,6].map(i => (
-                       <Skeleton key={i} className="flex-1" style={{ height: `${Math.random() * 60 + 20}%` }} />
-                     ))}
-                   </div>
-                   <div className="flex justify-between">
-                     {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-2 w-8" />)}
-                   </div>
-                </div>
-              ) : growthData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={growthData}>
-                    <defs>
-                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                    <XAxis 
-                      dataKey="month" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#9CA3AF' }}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#9CA3AF' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                      labelStyle={{ fontWeight: 900, color: '#111827' }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="count" 
-                      stroke="#8B5CF6" 
-                      strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#colorCount)" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                  <TrendingUp className="w-8 h-8 mb-2 opacity-20" />
-                  <p className="text-xs font-medium">No growth data available yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Top Content Card */}
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
-            <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest">Content Insights</h3>
-            
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-2xl">
-                <div className="flex items-center gap-2 text-primary mb-1">
-                  <Eye className="w-4 h-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Most Viewed Sermon</span>
-                </div>
-                <p className="font-bold text-gray-900 truncate">{stats.mostViewedSermon?.title || 'N/A'}</p>
-                <p className="text-xs text-gray-500">{stats.mostViewedSermon?.views || 0} views</p>
+        {hasPermission('users') && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Member Growth Chart */}
+            <div className="md:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" /> Member Growth
+                </h3>
               </div>
-
-              <div className="p-4 bg-gray-50 rounded-2xl">
-                <div className="flex items-center gap-2 text-emerald-600 mb-1">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Active RSVPs</span>
-                </div>
-                <p className="font-bold text-gray-900">{stats.totalRsvps} Members</p>
-                <p className="text-xs text-gray-500">Across all upcoming events</p>
+              <div className="h-64 w-full">
+                {loading ? (
+                  <div className="h-full w-full flex flex-col justify-end gap-2 px-1 pb-4">
+                     <div className="flex items-end gap-4 h-full">
+                       {[1,2,3,4,5,6].map(i => (
+                         <Skeleton key={i} className="flex-1" style={{ height: `${Math.random() * 60 + 20}%` }} />
+                       ))}
+                     </div>
+                     <div className="flex justify-between">
+                       {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-2 w-8" />)}
+                     </div>
+                  </div>
+                ) : growthData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={growthData}>
+                      <defs>
+                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                      <XAxis 
+                        dataKey="month" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fontWeight: 700, fill: '#9CA3AF' }}
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fontSize: 10, fontWeight: 700, fill: '#9CA3AF' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                        labelStyle={{ fontWeight: 900, color: '#111827' }}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="#8B5CF6" 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill="url(#colorCount)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                    <TrendingUp className="w-8 h-8 mb-2 opacity-20" />
+                    <p className="text-xs font-medium">No growth data available yet</p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Top Content Card */}
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
+              <h3 className="font-black text-gray-900 uppercase text-xs tracking-widest">Content Insights</h3>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Eye className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Most Viewed Sermon</span>
+                  </div>
+                  <p className="font-bold text-gray-900 truncate">{stats.mostViewedSermon?.title || 'N/A'}</p>
+                  <p className="text-xs text-gray-500">{stats.mostViewedSermon?.views || 0} views</p>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <div className="flex items-center gap-2 text-emerald-600 mb-1">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Active RSVPs</span>
+                  </div>
+                  <p className="font-bold text-gray-900">{stats.totalRsvps} Members</p>
+                  <p className="text-xs text-gray-500">Across all upcoming events</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Modules Grid */}
         <div className="space-y-4">
@@ -345,14 +352,14 @@ export default function AdminDashboard() {
             <div className="h-px flex-1 bg-gray-100 mx-4" />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {adminModules.map((module, idx) => (
+            {visibleModules.map((module, idx) => (
               <Link
                 key={module.label}
                 to={module.path}
                 className={cn(
                   "bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col items-center gap-4 text-center group hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all relative overflow-hidden",
-                  idx === 0 && "md:col-span-2 md:flex-row md:text-left",
-                  idx === 1 && "md:row-span-2 md:justify-center"
+                  idx === 0 && visibleModules.length > 2 && "md:col-span-2 md:flex-row md:text-left",
+                  idx === 1 && visibleModules.length > 3 && "md:row-span-2 md:justify-center"
                 )}
               >
                 {/* Visual Accent */}
@@ -378,6 +385,12 @@ export default function AdminDashboard() {
               </Link>
             ))}
           </div>
+          {visibleModules.length === 0 && (
+            <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
+               <ShieldAlert className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+               <p className="text-gray-400 font-black uppercase text-[10px] tracking-[0.2em]">Contact Super Admin for Access</p>
+            </div>
+          )}
         </div>
       </main>
     </div>

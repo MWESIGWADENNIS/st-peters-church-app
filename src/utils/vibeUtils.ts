@@ -1,6 +1,6 @@
 import { format, isSunday, isSameDay } from 'date-fns';
 
-export type VibeType = 'default' | 'sunday' | 'easter' | 'palm-sunday' | 'independence' | 'womens-day' | 'christmas' | 'new-year';
+export type VibeType = 'default' | 'sunday' | 'tuesday' | 'wednesday' | 'friday' | 'easter' | 'palm-sunday' | 'independence' | 'womens-day' | 'christmas' | 'new-year';
 
 interface VibeProfile {
   type: VibeType;
@@ -117,17 +117,64 @@ export const getVibe = (date: Date): VibeProfile => {
   }
 
   // 3. Weekly Vibes
+  
+  // Sunday Service
   if (isSunday(date)) {
     return {
       type: 'sunday',
       greeting: 'Blessed Sunday',
-      subGreeting: 'Welcome to the Sanctuary',
+      subGreeting: 'The Lord\'s Day',
       primaryColor: 'text-primary',
       accentColor: 'bg-accent',
       gradient: 'from-primary via-purple-600 to-indigo-700',
       icon: '⛪',
-      badge: '🙏 Sacred',
-      message: 'It is a beautiful day to worship in the house of the Lord. We are glad you are here with us.'
+      badge: '🙏 Sunday Service',
+      message: 'It is a beautiful day to worship in the house of the Lord. Join us for a powerful time of praise and word.'
+    };
+  }
+
+  // Tuesday: Holy Communion
+  if (dayName === 'Tuesday') {
+    return {
+      type: 'tuesday',
+      greeting: 'Holy Communion',
+      subGreeting: 'At the Lord\'s Table',
+      primaryColor: 'text-red-700',
+      accentColor: 'bg-red-500',
+      gradient: 'from-red-700 via-rose-500 to-red-800',
+      icon: '🍷',
+      badge: '🍞 Communion',
+      message: 'Today we gather for Holy Communion. Let us remember Christ\'s sacrifice and renew our covenant with Him.'
+    };
+  }
+
+  // Wednesday: Fellowship Night
+  if (dayName === 'Wednesday') {
+    return {
+      type: 'wednesday',
+      greeting: 'Fellowship Night',
+      subGreeting: 'Growing Together in Christ',
+      primaryColor: 'text-teal-700',
+      accentColor: 'bg-teal-500',
+      gradient: 'from-teal-600 via-emerald-400 to-teal-700',
+      icon: '🤝',
+      badge: '💫 Fellowship',
+      message: 'Mid-week renewal! Join our fellowship tonight as we study the word and share our journeys in faith.'
+    };
+  }
+
+  // Friday: Morning Glory
+  if (dayName === 'Friday') {
+    return {
+      type: 'friday',
+      greeting: 'Morning Glory',
+      subGreeting: 'First Light Prayer',
+      primaryColor: 'text-blue-600',
+      accentColor: 'bg-sky-400',
+      gradient: 'from-sky-400 via-blue-500 to-indigo-600',
+      icon: '☀️',
+      badge: '🔥 Morning Glory',
+      message: 'The fire on the altar must not go out. Join us for Morning Glory prayer as we start the morning with God.'
     };
   }
 

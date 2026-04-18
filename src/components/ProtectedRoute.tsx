@@ -2,8 +2,8 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
-export const ProtectedRoute: React.FC<{ role?: string }> = ({ role }) => {
-  const { user, profile, loading } = useAuthStore();
+export const ProtectedRoute: React.FC<{ role?: string; permission?: string }> = ({ role, permission }) => {
+  const { user, profile, loading, hasPermission } = useAuthStore();
 
   if (loading) {
     return (
@@ -17,8 +17,14 @@ export const ProtectedRoute: React.FC<{ role?: string }> = ({ role }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (role && profile?.role !== role) {
+  // Role check (e.g. must be admin to access admin section)
+  if (role && profile?.role !== role && !profile?.is_super_admin) {
     return <Navigate to="/home" replace />;
+  }
+
+  // Permission check (granular access inside admin)
+  if (permission && !hasPermission(permission)) {
+    return <Navigate to="/admin" replace />;
   }
 
   return <Outlet />;

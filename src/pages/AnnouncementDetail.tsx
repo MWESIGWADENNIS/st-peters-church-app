@@ -5,17 +5,32 @@ import { ChevronLeft, Share2, Megaphone, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
+import { persistenceService } from '../services/persistenceService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+
 export default function AnnouncementDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [announcement, setAnnouncement] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const isOnline = useNetworkStatus();
 
   useEffect(() => {
     const fetchAnnouncement = async () => {
       if (!id) return;
       
       setLoading(true);
+
+      // Check cache first
+      const cached = await persistenceService.get('announcements');
+      const found = cached?.find((a: any) => a.id === id);
+      if (found) {
+        setAnnouncement(found);
+        setLoading(false);
+      }
+
+      if (!isOnline) return;
+
       try {
         // Add a timeout to the request
         const fetchPromise = supabase
@@ -32,9 +47,15 @@ export default function AnnouncementDetail() {
           
         if (error) {
           console.error('Error fetching announcement:', error);
-          toast.error('Could not load announcement');
+          if (!found) toast.error('Could not load announcement');
         } else if (data) {
           setAnnouncement(data);
+          
+          // Sync single item if not in cache
+          if (!found) {
+            const allCached = await persistenceService.get('announcements') || [];
+            await persistenceService.set('announcements', [...allCached, data]);
+          }
         }
       } catch (err: any) {
         console.error('Unexpected error:', err);

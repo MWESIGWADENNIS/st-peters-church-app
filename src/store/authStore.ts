@@ -12,6 +12,7 @@ interface AuthState {
   signOut: () => Promise<void>;
   fetchProfile: (userId: string) => Promise<void>;
   initialize: () => Promise<void>;
+  hasPermission: (permission: string) => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -45,12 +46,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           
         if (isPrimaryAdmin) {
           data.role = 'admin';
+          data.is_super_admin = true;
         }
         set({ profile: data });
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
+  },
+  hasPermission: (permission: string) => {
+    const profile = get().profile;
+    if (!profile) return false;
+    if (profile.is_super_admin || profile.role === 'admin' && (!profile.permissions || profile.permissions.length === 0)) return true;
+    return profile.permissions?.includes(permission) || false;
   },
   initialize: async () => {
     if (get().initialized) return;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { MessageSquare, CheckCircle2, Trash2, Clock, Filter, User, ArrowLeft } from 'lucide-react';
+import { MessageSquare, CheckCircle2, Trash2, Clock, Filter, User, ArrowLeft, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ export default function AdminPrayerRequests() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unanswered' | 'answered'>('all');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRequests();
@@ -45,11 +46,11 @@ export default function AdminPrayerRequests() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this prayer request?')) return;
     try {
       const { error } = await supabase.from('prayer_requests').delete().eq('id', id);
       if (error) throw error;
       toast.success('Deleted.');
+      setDeleteConfirmId(null);
       fetchRequests();
     } catch (error: any) {
       toast.error(error.message || 'Delete failed.');
@@ -114,9 +115,20 @@ export default function AdminPrayerRequests() {
                   >
                     <CheckCircle2 className="w-5 h-5" />
                   </button>
-                  <button onClick={() => handleDelete(req.id)} className="p-2 text-red-600 bg-red-50 rounded-lg">
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {deleteConfirmId === req.id ? (
+                    <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                      <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-lg">
+                        <X className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDelete(req.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                        Delete
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteConfirmId(req.id)} className="p-2 text-red-600 bg-red-50 rounded-lg">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
 

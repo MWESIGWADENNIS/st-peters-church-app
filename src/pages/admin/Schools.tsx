@@ -30,6 +30,7 @@ export default function AdminSchools() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -139,11 +140,11 @@ export default function AdminSchools() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this school ministry?')) return;
     try {
       const { error } = await supabase.from('schools').delete().eq('id', id);
       if (error) throw error;
       toast.success('Deleted.');
+      setDeleteConfirmId(null);
       fetchSchools();
     } catch (error: any) {
       toast.error(error.message || 'Delete failed.');
@@ -440,20 +441,31 @@ export default function AdminSchools() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <button 
-                    onClick={() => { setEditingId(school.id); setFormData(school); setShowForm(true); }} 
-                    className="p-3 bg-gray-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(school.id)} 
-                    className="p-3 bg-gray-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {deleteConfirmId === school.id ? (
+                  <div className="flex flex-col items-center gap-2 animate-in zoom-in-95 duration-200">
+                    <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-xl w-full flex justify-center">
+                      <X className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(school.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-xl">
+                      Delete
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      onClick={() => { setEditingId(school.id); setFormData(school); setShowForm(true); }} 
+                      className="p-3 bg-gray-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setDeleteConfirmId(school.id)} 
+                      className="p-3 bg-gray-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}

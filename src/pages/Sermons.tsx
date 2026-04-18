@@ -21,6 +21,11 @@ export default function Sermons() {
       const cacheValid = isCacheValid('sermons');
       if (!cacheValid) setLoading(true);
 
+      if (!navigator.onLine) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data } = await supabase
           .from('sermons')

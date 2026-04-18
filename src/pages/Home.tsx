@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Play,
   Eye,
+  ShieldCheck,
   Music,
   StickyNote,
   Gift,
@@ -23,16 +24,20 @@ import {
   Sparkles,
   Quote,
   ArrowRight,
-  Search
+  Search,
+  Book
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { getTodayServices, getSundayTheme } from '../lib/churchSchedule';
 import { getVibe } from '../utils/vibeUtils';
+import { getBibleLink } from '../utils/bibleLinkUtils';
 import { useDataStore } from '../store/dataStore';
 import { useAuthStore } from '../store/authStore';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { BannerSkeleton, CardSkeleton } from '../components/Skeleton';
+import { dataRefreshService } from '../services/dataRefreshService';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -68,15 +73,23 @@ export default function Home() {
 
   const [loading, setLoading] = useState(!isCacheValid('home'));
   const [error, setError] = useState<string | null>(null);
+  const isOnline = useNetworkStatus();
 
   const fetchData = async (force = false) => {
     const cacheValid = isCacheValid('home');
-    if (!cacheValid || force) {
+    if ((!cacheValid || force) && isOnline) {
       setLoading(true);
       setError(null);
     }
 
     try {
+      if (!isOnline) {
+        await dataRefreshService.loadFromCache();
+        return;
+      }
+
+      await dataRefreshService.refreshAll();
+      
       const todayStr = format(new Date(), 'yyyy-MM-dd');
       const dayName = format(new Date(), 'EEEE');
 
@@ -198,7 +211,8 @@ export default function Home() {
         title: 'Daily Encouragement',
         subtitle: '"For I know the plans I have for you," declares the Lord...',
         reference: 'Jeremiah 29:11',
-        color: 'bg-gradient-to-br from-emerald-500 to-teal-600'
+        color: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+        path: getBibleLink('Jeremiah 29:11')
       });
 
       // Batch state updates
@@ -241,7 +255,7 @@ export default function Home() {
 
     const handleOnline = () => {
       console.log('Back online, refreshing home data...');
-      fetchData();
+      dataRefreshService.refreshAll();
     };
 
     window.addEventListener('online', handleOnline);
@@ -271,6 +285,10 @@ export default function Home() {
           vibe.type === 'easter' ? 'from-purple-400' :
           vibe.type === 'palm-sunday' ? 'from-emerald-400' :
           vibe.type === 'christmas' ? 'from-red-400' :
+          vibe.type === 'sunday' ? 'from-primary' :
+          vibe.type === 'tuesday' ? 'from-red-600' :
+          vibe.type === 'wednesday' ? 'from-teal-600' :
+          vibe.type === 'friday' ? 'from-sky-600' :
           'from-primary'
         )} />
 
@@ -294,12 +312,23 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-black leading-none tracking-tighter flex flex-col">
                   <span className="text-primary opacity-90">Welcome,</span>
-                  <span className={cn(
-                    "bg-clip-text text-transparent animate-gradient-x py-1 bg-gradient-to-r",
-                    vibe.gradient
-                  )}>
-                    {profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Member'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "bg-clip-text text-transparent animate-gradient-x py-1 bg-gradient-to-r",
+                      vibe.gradient
+                    )}>
+                      {profile?.full_name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || 'Member'}
+                    </span>
+                    {profile?.role === 'admin' && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="bg-primary text-white text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-tighter shadow-sm flex items-center gap-0.5"
+                      >
+                         Admin
+                      </motion.div>
+                    )}
+                  </div>
                 </h1>
                 <motion.span
                   animate={{ 
@@ -349,16 +378,38 @@ export default function Home() {
             </div>
           </motion.div>
           
-          <motion.button 
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.9, rotate: 180 }}
-            onClick={() => fetchData(true)} 
-            disabled={loading}
-            className="p-3 bg-white text-primary rounded-2xl transition-all disabled:opacity-50 shadow-xl border border-primary/5 group relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <RefreshCw className={cn("w-5 h-5 relative z-10 transition-transform group-hover:scale-110", loading && "animate-spin")} />
-          </motion.button>
+          <div className="flex items-center gap-2">
+            {profile?.role === 'admin' && (
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => navigate('/admin')}
+                className="p-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center border border-white/20"
+              >
+                <div className="relative">
+                  <ShieldCheck className="w-5 h-5" />
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full border border-primary shadow-[0_0_5px_rgba(245,171,0,0.5)]"
+                  />
+                </div>
+              </motion.button>
+            )}
+            
+            <motion.button 
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9, rotate: 180 }}
+              onClick={() => fetchData(true)} 
+              disabled={loading}
+              className="p-3 bg-white text-primary rounded-2xl transition-all disabled:opacity-50 shadow-xl border border-primary/5 group relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <RefreshCw className={cn("w-5 h-5 relative z-10 transition-transform group-hover:scale-110", loading && "animate-spin")} />
+            </motion.button>
+          </div>
         </div>
 
         {/* Vibe Message Card */}
@@ -720,9 +771,10 @@ export default function Home() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-3">
           {[
             { icon: MessageSquare, label: 'Prayer', path: '/prayer', color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50/50', text: 'text-blue-600' },
+            { icon: Book, label: 'Bible', path: '/bible', color: 'from-primary to-indigo-600', bg: 'bg-primary/5', text: 'text-primary' },
             { icon: Calendar, label: 'Events', path: '/events', color: 'from-orange-500 to-orange-600', bg: 'bg-orange-50/50', text: 'text-orange-600' },
             { icon: Megaphone, label: 'News', path: '/announcements', color: 'from-purple-500 to-purple-600', bg: 'bg-purple-50/50', text: 'text-purple-600' },
             { icon: ImageIcon, label: 'Gallery', path: '/gallery', color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50/50', text: 'text-emerald-600' },
@@ -733,14 +785,14 @@ export default function Home() {
                   whileHover={{ y: -5, scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   className={cn(
-                    "w-16 h-16 rounded-[1.75rem] flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden border border-white",
+                    "w-full aspect-square rounded-[1.75rem] flex items-center justify-center shadow-[0_10px_20px_rgba(0,0,0,0.05)] transition-all relative overflow-hidden border border-white",
                     action.bg
                   )}
                 >
                   <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-10 bg-gradient-to-br transition-opacity", action.color)} />
-                  <action.icon className={cn("w-7 h-7 transition-all group-hover:scale-110", action.text)} />
+                  <action.icon className={cn("w-6 h-6 transition-all group-hover:scale-110", action.text)} />
                 </motion.div>
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest group-hover:text-primary transition-colors">{action.label}</span>
+                <span className="text-[9px] font-black text-gray-500 uppercase tracking-tight group-hover:text-primary transition-colors text-center">{action.label}</span>
               </Link>
             </div>
           ))}

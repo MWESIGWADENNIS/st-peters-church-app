@@ -11,6 +11,7 @@ export default function AdminHymns() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [formData, setFormData] = useState({
     number: '',
@@ -89,11 +90,11 @@ export default function AdminHymns() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this hymn?')) return;
     try {
       const { error } = await supabase.from('hymns').delete().eq('id', id);
       if (error) throw error;
       toast.success('Deleted.');
+      setDeleteConfirmId(null);
       fetchHymns();
     } catch (error: any) {
       toast.error(error.message || 'Delete failed.');
@@ -224,14 +225,25 @@ export default function AdminHymns() {
               <h4 className="font-bold text-gray-800 truncate">{hymn.title}</h4>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{hymn.category}</p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => { setEditingId(hymn.id); setFormData(hymn); setShowForm(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button onClick={() => handleDelete(hymn.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            {deleteConfirmId === hymn.id ? (
+              <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-lg">
+                  <X className="w-4 h-4" />
+                </button>
+                <button onClick={() => handleDelete(hymn.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                  Delete
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => { setEditingId(hymn.id); setFormData(hymn); setShowForm(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => setDeleteConfirmId(hymn.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

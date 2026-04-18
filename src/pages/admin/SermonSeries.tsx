@@ -22,6 +22,7 @@ export default function AdminSermonSeries() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSeries, setEditingSeries] = useState<any>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -77,11 +78,11 @@ export default function AdminSermonSeries() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this series? Sermons will remain but will be unlinked.')) return;
     try {
       const { error } = await supabase.from('sermon_series').delete().eq('id', id);
       if (error) throw error;
       toast.success('Series deleted');
+      setDeleteConfirmId(null);
       fetchSeries();
     } catch (err) {
       toast.error('Failed to delete series');
@@ -142,22 +143,41 @@ export default function AdminSermonSeries() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                  <button 
-                    onClick={() => {
-                      setEditingSeries(s);
-                      setFormData({ title: s.title, description: s.description || '', cover_image_url: s.cover_image_url || '' });
-                      setShowAddModal(true);
-                    }}
-                    className="p-3 bg-white rounded-full text-primary hover:scale-110 transition-transform"
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(s.id)}
-                    className="p-3 bg-white rounded-full text-red-600 hover:scale-110 transition-transform"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {deleteConfirmId === s.id ? (
+                    <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(null); }} 
+                        className="p-2 bg-white rounded-full text-gray-400"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} 
+                        className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg shadow-lg"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => {
+                          setEditingSeries(s);
+                          setFormData({ title: s.title, description: s.description || '', cover_image_url: s.cover_image_url || '' });
+                          setShowAddModal(true);
+                        }}
+                        className="p-3 bg-white rounded-full text-primary hover:scale-110 transition-transform"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => setDeleteConfirmId(s.id)}
+                        className="p-3 bg-white rounded-full text-red-600 hover:scale-110 transition-transform"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="p-4">

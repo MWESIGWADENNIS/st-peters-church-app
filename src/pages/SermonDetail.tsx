@@ -5,6 +5,9 @@ import { ChevronLeft, Share2, User, Calendar, BookOpen, Eye, RotateCcw, RotateCw
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { motion } from 'motion/react';
+import { getBibleLink } from '../utils/bibleLinkUtils';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { WifiOff } from 'lucide-react';
 
 // Robust YouTube ID extraction
 const getYoutubeId = (url: string) => {
@@ -145,6 +148,8 @@ export default function SermonDetail() {
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
+  const isOnline = useNetworkStatus();
+
   if (loading) return <div className="p-12 text-center animate-pulse">Loading sermon...</div>;
   if (!sermon) return <div className="p-12 text-center">Sermon not found.</div>;
 
@@ -171,7 +176,17 @@ export default function SermonDetail() {
 
       {/* Media Player */}
       <div ref={playerContainerRef} className="aspect-video bg-black w-full relative group overflow-hidden shadow-2xl">
-        {!isPlaying && (youtubeId || directUrl || googleDriveId) ? (
+        {!isOnline ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-accent">
+              <WifiOff className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-black text-lg">Offline Mode</h3>
+              <p className="text-gray-400 text-xs font-medium max-w-[200px]">Internet required to play video or audio sermons.</p>
+            </div>
+          </div>
+        ) : !isPlaying && (youtubeId || directUrl || googleDriveId) ? (
           <div 
             className="absolute inset-0 cursor-pointer group z-10"
             onClick={() => setIsPlaying(true)}
@@ -187,7 +202,7 @@ export default function SermonDetail() {
           </div>
         ) : null}
 
-        {youtubeId ? (
+        {isOnline && youtubeId ? (
           <div className="w-full h-full relative">
             <iframe
               src={`https://www.youtube.com/embed/${youtubeId}?modestbranding=1&rel=0&showinfo=0&autoplay=${isPlaying ? 1 : 0}`}
@@ -197,7 +212,7 @@ export default function SermonDetail() {
               title={sermon.title}
             ></iframe>
           </div>
-        ) : googleDriveId ? (
+        ) : isOnline && googleDriveId ? (
           <div className="w-full h-full relative">
             <iframe
               src={`https://drive.google.com/file/d/${googleDriveId}/preview`}
@@ -207,7 +222,7 @@ export default function SermonDetail() {
               title={sermon.title}
             ></iframe>
           </div>
-        ) : directUrl ? (
+        ) : isOnline && directUrl ? (
           <video
             src={directUrl}
             className="w-full h-full"
@@ -215,7 +230,7 @@ export default function SermonDetail() {
             autoPlay={isPlaying}
             playsInline
           />
-        ) : sermon.audio_url ? (
+        ) : isOnline && sermon.audio_url ? (
           <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-gradient-to-br from-primary to-primary/80 relative">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm shadow-xl">
               <User className="w-10 h-10 text-white" />
@@ -270,9 +285,12 @@ export default function SermonDetail() {
           </h1>
           <div className="flex flex-wrap gap-2">
             {sermon.bible_reference && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-lavender text-primary rounded-lg text-sm font-bold">
+              <button 
+                onClick={() => navigate(getBibleLink(sermon.bible_reference))}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-lavender text-primary rounded-lg text-sm font-bold hover:bg-primary hover:text-white transition-all"
+              >
                 <BookOpen className="w-4 h-4" /> {sermon.bible_reference}
-              </div>
+              </button>
             )}
             {sermon.sermon_series && (
               <button 

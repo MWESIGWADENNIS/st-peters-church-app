@@ -37,6 +37,11 @@ export default function Hymns() {
       const cacheValid = isCacheValid('hymns');
       if (!cacheValid) setLoading(true);
 
+      if (!navigator.onLine) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('hymns')

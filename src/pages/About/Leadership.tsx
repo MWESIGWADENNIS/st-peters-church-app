@@ -3,24 +3,45 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ChevronLeft, User } from 'lucide-react';
 
+import { persistenceService } from '../../services/persistenceService';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+
 export default function Leadership() {
   const navigate = useNavigate();
   const [leaders, setLeaders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const isOnline = useNetworkStatus();
 
   useEffect(() => {
     const fetchLeaders = async () => {
-      const { data } = await supabase
-        .from('leadership')
-        .select('*')
-        .eq('is_active', true)
-        .order('order_index', { ascending: true });
-      
-      if (data) setLeaders(data);
-      setLoading(false);
+      // Check cache first
+      const cached = await persistenceService.get('leadership');
+      if (cached?.length) {
+        setLeaders(cached);
+        setLoading(false);
+      }
+
+      if (!isOnline) return;
+
+      try {
+        const { data } = await supabase
+          .from('leadership')
+          .select('*')
+          .eq('is_active', true)
+          .order('order_index', { ascending: true });
+        
+        if (data) {
+          setLeaders(data);
+          await persistenceService.set('leadership', data);
+        }
+      } catch (err) {
+        console.error('Error fetching leaders:', err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchLeaders();
-  }, []);
+  }, [isOnline]);
 
   return (
     <div className="min-h-screen bg-white pb-12">

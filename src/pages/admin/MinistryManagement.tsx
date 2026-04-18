@@ -22,6 +22,7 @@ export default function AdminMinistryManagement() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -130,7 +131,6 @@ export default function AdminMinistryManagement() {
   };
 
   const handleDeleteMinistry = async (id: string) => {
-    if (!window.confirm('Are you sure? This will remove all member associations with this ministry.')) return;
     try {
       const { error } = await supabase
         .from('ministries')
@@ -140,6 +140,7 @@ export default function AdminMinistryManagement() {
       if (error) throw error;
 
       setMinistries(prev => prev.filter(m => m.id !== id));
+      setDeleteConfirmId(null);
       toast.success('Ministry deleted successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete ministry');
@@ -283,12 +284,23 @@ export default function AdminMinistryManagement() {
                     >
                       {m.is_active ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5" />}
                     </button>
-                    <button 
-                      onClick={() => handleDeleteMinistry(m.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {deleteConfirmId === m.id ? (
+                      <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                        <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-lg">
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteMinistry(m.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                          Confirm
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => setDeleteConfirmId(m.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
                 {m.description && (

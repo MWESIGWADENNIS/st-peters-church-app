@@ -11,6 +11,7 @@ export default function AdminServices() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     day_of_week: 'Sunday',
@@ -90,11 +91,11 @@ export default function AdminServices() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this service?')) return;
     try {
       const { error } = await supabase.from('services').delete().eq('id', id);
       if (error) throw error;
       toast.success('Deleted.');
+      setDeleteConfirmId(null);
       fetchServices();
     } catch (error: any) {
       toast.error(error.message || 'Delete failed.');
@@ -401,34 +402,45 @@ export default function AdminServices() {
                 {service.day_of_week} • {service.start_time.slice(0, 5)} - {service.end_time.slice(0, 5)}
               </p>
             </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => { 
-                  setEditingId(service.id); 
-                  setFormData({
-                    name: service.name || '',
-                    day_of_week: service.day_of_week || 'Sunday',
-                    start_time: service.start_time || '08:00',
-                    end_time: service.end_time || '10:00',
-                    description: service.description || '',
-                    programme: service.programme || '',
-                    psalms_reading: service.psalms_reading || '',
-                    first_reading: service.first_reading || '',
-                    second_reading: service.second_reading || '',
-                    preacher: service.preacher || '',
-                    leader: service.leader || '',
-                    theme: service.theme || ''
-                  }); 
-                  setShowForm(true); 
-                }} 
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button onClick={() => handleDelete(service.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+            {deleteConfirmId === service.id ? (
+              <div className="flex items-center gap-1 animate-in zoom-in-95 duration-200">
+                <button onClick={() => setDeleteConfirmId(null)} className="p-2 text-gray-400 bg-gray-50 rounded-lg">
+                  <X className="w-4 h-4" />
+                </button>
+                <button onClick={() => handleDelete(service.id)} className="px-3 py-2 bg-red-600 text-white text-[10px] font-black uppercase rounded-lg">
+                  Delete
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { 
+                    setEditingId(service.id); 
+                    setFormData({
+                      name: service.name || '',
+                      day_of_week: service.day_of_week || 'Sunday',
+                      start_time: service.start_time || '08:00',
+                      end_time: service.end_time || '10:00',
+                      description: service.description || '',
+                      programme: service.programme || '',
+                      psalms_reading: service.psalms_reading || '',
+                      first_reading: service.first_reading || '',
+                      second_reading: service.second_reading || '',
+                      preacher: service.preacher || '',
+                      leader: service.leader || '',
+                      theme: service.theme || ''
+                    }); 
+                    setShowForm(true); 
+                  }} 
+                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => setDeleteConfirmId(service.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
