@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
+import { ThemeManager } from './components/ThemeManager';
 
 // Pages
 import Login from './pages/Login';
@@ -157,6 +158,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <ThemeManager />
       <Router>
         <Toaster position="top-center" />
         <OfflineBanner />

@@ -94,7 +94,7 @@ export default function Home() {
       const dayName = format(new Date(), 'EEEE');
 
       const requests = [
-        supabase.from('services').select('id, name, start_time').eq('day_of_week', dayName).order('start_time', { ascending: true }),
+        supabase.from('services').select('*').eq('day_of_week', dayName).order('start_time', { ascending: true }),
         supabase.from('daily_bread').select('id, title, bible_verse, devotion_body, devotion_date').eq('devotion_date', todayStr).maybeSingle(),
         supabase.from('events').select('id, title, image_url, event_date, start_time').gte('event_date', todayStr).order('event_date', { ascending: true }).limit(10),
         supabase.from('announcements').select('id, title, body, image_url, is_pinned, created_at').order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(4),
@@ -152,9 +152,11 @@ export default function Home() {
         const currentTime = format(now, 'HH:mm');
         
         todayServicesData.forEach((service, index) => {
+          if (!service?.start_time) return; // Defensive check
+          
           const startTime = service.start_time.slice(0, 5);
-          const startHour = parseInt(startTime.split(':')[0]);
-          const startMin = parseInt(startTime.split(':')[1]);
+          const startHour = parseInt(startTime.split(':')[0]) || 0;
+          const startMin = parseInt(startTime.split(':')[1]) || 0;
           const endHour = startHour + 2;
           const endTime = `${endHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')}`;
           
@@ -183,6 +185,9 @@ export default function Home() {
               time: startTime,
               icon: Clock,
               isLive,
+              preacher: service.preacher,
+              preacher_image_url: service.preacher_image_url,
+              theme: service.theme,
               color: isLive 
                 ? 'bg-gradient-to-br from-red-600 via-rose-500 to-orange-500' 
                 : index % 2 === 0 
@@ -411,6 +416,119 @@ export default function Home() {
             </motion.button>
           </div>
         </div>
+
+        {/* Sunday Worship Special Card */}
+        {vibe.type === 'sunday' && (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-gradient-to-br from-red-800 via-red-900 to-amber-600 p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(128,0,0,0.3)] border border-white/20 relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-amber-400/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 bg-red-500/20 rounded-full blur-3xl animate-pulse" />
+            
+            <div className="relative z-10 space-y-3">
+               <div className="flex items-center gap-2">
+                 <div className="px-2 py-0.5 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 flex items-center gap-1.5">
+                   <span className="w-1 h-1 bg-amber-400 rounded-full animate-ping" />
+                   <span className="text-[8px] font-black text-amber-200 uppercase tracking-widest">Worship Day</span>
+                 </div>
+               </div>
+               
+               <div className="flex items-center gap-4">
+                 <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner group-hover:rotate-6 transition-transform">
+                   <Sparkles className="w-8 h-8 text-amber-400" />
+                 </div>
+                 <div>
+                   <h2 className="text-xl font-black text-white leading-tight tracking-tight">Today is a Day for Praise</h2>
+                   <p className="text-amber-100/70 text-[10px] font-bold mt-1 max-w-[200px]">"I was glad when they said unto me, Let us go into the house of the Lord." — Psalm 122:1</p>
+                 </div>
+               </div>
+
+               <div className="pt-2 flex items-center gap-3">
+                 <button 
+                   onClick={() => navigate('/livestream')} 
+                   className="flex-1 py-3 bg-white text-red-900 font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                 >
+                   <Play className="w-3.5 h-3.5 fill-current" /> Join Online
+                 </button>
+                 <button 
+                    onClick={() => navigate('/hymns')}
+                    className="p-3 bg-white/10 backdrop-blur-md text-white rounded-2xl border border-white/20 hover:bg-white/20 transition-all"
+                 >
+                   <Music className="w-5 h-5" />
+                 </button>
+               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Sunday Preacher Invitation Card */}
+        {vibe.type === 'sunday' && banners.some(b => b.type === 'service') && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col gap-6 relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Sunday Service</h3>
+                  <p className="text-[10px] font-bold text-gray-400">Word from our Preacher</p>
+                </div>
+              </div>
+              <div className="px-3 py-1 bg-accent/10 text-accent text-[9px] font-black rounded-lg uppercase tracking-widest border border-accent/20">
+                Invitation
+              </div>
+            </div>
+
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-24 h-24 rounded-3xl bg-gray-50 p-1 border border-gray-100 flex-shrink-0 group overflow-hidden">
+                {banners.find(b => b.type === 'service')?.preacher_image_url ? (
+                  <img 
+                    src={banners.find(b => b.type === 'service')?.preacher_image_url} 
+                    alt="Preacher" 
+                    className="w-full h-full object-cover rounded-2xl transition-transform group-hover:scale-110" 
+                  />
+                ) : (
+                  <div className="w-full h-full bg-primary/5 flex items-center justify-center text-primary/30">
+                    <User className="w-10 h-10" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-secondary text-[10px] font-black uppercase tracking-widest">Preaching Today</p>
+                <h4 className="text-xl font-display font-black text-primary leading-tight">
+                  {banners.find(b => b.type === 'service')?.preacher || 'Our Clergy'}
+                </h4>
+                {banners.find(b => b.type === 'service')?.theme && (
+                  <p className="text-xs font-bold text-gray-500 line-clamp-2 italic">
+                    Theme: "{banners.find(b => b.type === 'service')?.theme}"
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="relative z-10 p-5 bg-primary rounded-3xl text-white shadow-lg shadow-primary/20">
+              <p className="text-xs font-medium leading-relaxed mb-4 opacity-90">
+                Join us today as we gather to receive a powerful word of transformation. Don't miss this opportunity to be spiritually renewed!
+              </p>
+              <button 
+                onClick={() => navigate('/today-service')}
+                className="w-full py-3 bg-white text-primary font-black rounded-2xl text-[11px] uppercase tracking-[0.2em] shadow-sm flex items-center justify-center gap-2 group"
+              >
+                View Full Program <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+            
+            <div className="absolute -left-4 -bottom-4 opacity-5 pointer-events-none">
+              <Sparkles className="w-32 h-32 text-primary" />
+            </div>
+          </motion.div>
+        )}
 
         {/* Vibe Message Card */}
         <motion.div

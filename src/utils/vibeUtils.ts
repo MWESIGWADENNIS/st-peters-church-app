@@ -122,14 +122,14 @@ export const getVibe = (date: Date): VibeProfile => {
   if (isSunday(date)) {
     return {
       type: 'sunday',
-      greeting: 'Blessed Sunday',
-      subGreeting: 'The Lord\'s Day',
+      greeting: 'Glory to God!',
+      subGreeting: 'The Lord\'s Day Celebration',
       primaryColor: 'text-primary',
-      accentColor: 'bg-accent',
-      gradient: 'from-primary via-purple-600 to-indigo-700',
-      icon: '⛪',
-      badge: '🙏 Sunday Service',
-      message: 'It is a beautiful day to worship in the house of the Lord. Join us for a powerful time of praise and word.'
+      accentColor: 'bg-primary',
+      gradient: 'from-accent via-white to-accent/50',
+      icon: '✨',
+      badge: '⛪ Sunday Service',
+      message: 'It is a beautiful morning to worship. Join the congregation in praise and thanksgiving!'
     };
   }
 

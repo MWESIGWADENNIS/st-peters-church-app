@@ -23,7 +23,9 @@ export default function AdminServices() {
     first_reading: '',
     second_reading: '',
     preacher: '',
+    preacher_image_url: '',
     leader: '',
+    leader_image_url: '',
     theme: ''
   });
 
@@ -79,7 +81,9 @@ export default function AdminServices() {
         first_reading: '',
         second_reading: '',
         preacher: '',
+        preacher_image_url: '',
         leader: '',
+        leader_image_url: '',
         theme: ''
       });
       fetchServices();
@@ -153,7 +157,9 @@ export default function AdminServices() {
                     first_reading: '',
                     second_reading: '',
                     preacher: '',
+                    preacher_image_url: '',
                     leader: '',
+                    leader_image_url: '',
                     theme: ''
                   });
                 } else {
@@ -171,7 +177,9 @@ export default function AdminServices() {
                       first_reading: service.first_reading || '',
                       second_reading: service.second_reading || '',
                       preacher: service.preacher || '',
+                      preacher_image_url: service.preacher_image_url || '',
                       leader: service.leader || '',
+                      leader_image_url: service.leader_image_url || '',
                       theme: service.theme || ''
                     });
                   }
@@ -267,26 +275,50 @@ export default function AdminServices() {
                 return (
                   <>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Preacher</label>
-                        <input
-                          type="text"
-                          value={formData.preacher}
-                          onChange={e => setFormData({ ...formData, preacher: e.target.value })}
-                          className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
-                          placeholder="Name of Preacher"
-                        />
-                      </div>
-                      {(isMainSunday || isFellowship) && (
+                      <div className="space-y-4">
                         <div>
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Leader</label>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Preacher Name</label>
                           <input
                             type="text"
-                            value={formData.leader}
-                            onChange={e => setFormData({ ...formData, leader: e.target.value })}
+                            value={formData.preacher}
+                            onChange={e => setFormData({ ...formData, preacher: e.target.value })}
                             className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
-                            placeholder="Name of Leader"
+                            placeholder="Name of Preacher"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Preacher Image URL</label>
+                          <input
+                            type="text"
+                            value={formData.preacher_image_url}
+                            onChange={e => setFormData({ ...formData, preacher_image_url: e.target.value })}
+                            className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
+                            placeholder="https://..."
+                          />
+                        </div>
+                      </div>
+                      {(isMainSunday || isFellowship) && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Leader Name</label>
+                            <input
+                              type="text"
+                              value={formData.leader}
+                              onChange={e => setFormData({ ...formData, leader: e.target.value })}
+                              className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
+                              placeholder="Name of Leader"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Leader Image URL</label>
+                            <input
+                              type="text"
+                              value={formData.leader_image_url}
+                              onChange={e => setFormData({ ...formData, leader_image_url: e.target.value })}
+                              className="w-full px-4 py-3 bg-gray-50 rounded-xl border border-gray-100 focus:ring-2 focus:ring-primary outline-none"
+                              placeholder="https://..."
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -427,7 +459,9 @@ export default function AdminServices() {
                       first_reading: service.first_reading || '',
                       second_reading: service.second_reading || '',
                       preacher: service.preacher || '',
+                      preacher_image_url: service.preacher_image_url || '',
                       leader: service.leader || '',
+                      leader_image_url: service.leader_image_url || '',
                       theme: service.theme || ''
                     }); 
                     setShowForm(true); 

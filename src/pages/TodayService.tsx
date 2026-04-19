@@ -141,7 +141,7 @@ export default function TodayService() {
                         <div>
                           <h3 className="text-2xl font-display font-black text-gray-900">{service.name}</h3>
                           <p className="text-primary font-black text-sm uppercase tracking-widest">
-                            {service.start_time.slice(0, 5)} — {service.end_time?.slice(0, 5) || 'TBA'}
+                            {service.start_time?.slice(0, 5) || '00:00'} — {service.end_time?.slice(0, 5) || 'TBA'}
                           </p>
                         </div>
                       </div>
@@ -155,21 +155,45 @@ export default function TodayService() {
                         </div>
                       )}
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4">
                         {service.preacher && (
-                          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                              <Mic2 className="w-3 h-3" /> Preacher
-                            </p>
-                            <p className="text-sm font-bold text-gray-900">{service.preacher}</p>
+                          <div className="p-4 bg-gray-50 rounded-[2rem] border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
+                            <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 p-0.5 flex-shrink-0 relative z-10 overflow-hidden shadow-sm">
+                              {service.preacher_image_url ? (
+                                <img src={service.preacher_image_url} alt={service.preacher} className="w-full h-full object-cover rounded-[calc(1rem-0.125rem)]" />
+                              ) : (
+                                <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary">
+                                  <Mic2 className="w-6 h-6" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="relative z-10">
+                              <p className="text-[10px] font-black text-primary/50 uppercase tracking-[0.2em] mb-1">Preacher</p>
+                              <p className="text-base font-black text-gray-900 leading-tight">{service.preacher}</p>
+                            </div>
+                            <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                              <Mic2 className="w-20 h-20 text-primary" />
+                            </div>
                           </div>
                         )}
                         {service.leader && (
-                          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                              <User className="w-3 h-3" /> Leader
-                            </p>
-                            <p className="text-sm font-bold text-gray-900">{service.leader}</p>
+                          <div className="p-4 bg-gray-50 rounded-[2rem] border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
+                            <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 p-0.5 flex-shrink-0 relative z-10 overflow-hidden shadow-sm">
+                              {service.leader_image_url ? (
+                                <img src={service.leader_image_url} alt={service.leader} className="w-full h-full object-cover rounded-[calc(1rem-0.125rem)]" />
+                              ) : (
+                                <div className="w-full h-full bg-accent/10 flex items-center justify-center text-accent">
+                                  <User className="w-6 h-6" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="relative z-10">
+                              <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] mb-1">Service Leader</p>
+                              <p className="text-base font-black text-gray-900 leading-tight">{service.leader}</p>
+                            </div>
+                            <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+                              <User className="w-20 h-20 text-accent" />
+                            </div>
                           </div>
                         )}
                       </div>

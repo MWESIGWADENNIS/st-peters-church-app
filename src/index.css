@@ -6,14 +6,27 @@
   --font-display: "Playfair Display", serif;
   --font-serif: "Cormorant Garamond", serif;
   
-  --color-primary: #4B0082;
-  --color-accent: #F5A623;
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
   --color-lavender: #F3F0FF;
+}
+
+:root {
+  --primary: #4B0082;
+  --accent: #F5A623;
+  --page-bg: #FFFFFF;
+}
+
+.sunday-mode {
+  --primary: #800000; /* Deep Maroon / Spiritual Red */
+  --accent: #FFD700;  /* Pure Gold */
+  --page-bg: #FCF9F2; /* Sacred Cream */
 }
 
 @layer base {
   body {
-    @apply bg-white text-gray-900 font-sans;
+    background-color: var(--page-bg);
+    @apply text-gray-900 font-sans transition-colors duration-1000;
   }
   
   h1, h2, h3, h4, h5, h6 {

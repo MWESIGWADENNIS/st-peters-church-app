@@ -13,6 +13,7 @@ export const Layout: React.FC = () => {
   const { profile } = useAuthStore();
   const { churchSettings, unreadCount } = useDataStore();
   const [isLive, setIsLive] = useState(false);
+  const isSunday = new Date().getDay() === 0;
 
   useEffect(() => {
     // Listen for live status
@@ -44,11 +45,22 @@ export const Layout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white pb-20">
+    <div className={cn(
+      "min-h-screen pb-20 transition-colors duration-1000",
+      isSunday ? "bg-church-pattern" : "bg-white"
+    )}>
       {/* Top Bar */}
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-primary via-primary/95 to-indigo-900 px-4 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+      <header className={cn(
+        "sticky top-0 z-50 px-4 py-3 flex items-center justify-between shadow-lg overflow-hidden transition-all duration-1000",
+        isSunday 
+          ? "bg-gradient-to-r from-red-900 via-red-800 to-orange-800 border-b border-amber-500/30" 
+          : "bg-gradient-to-r from-primary via-primary/95 to-indigo-900"
+      )}>
         {/* Animated background element */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse" />
+        <div className={cn(
+          "absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse",
+          isSunday ? "bg-amber-400/20" : "bg-accent/10"
+        )} />
         
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
@@ -59,7 +71,10 @@ export const Layout: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-accent/30 rounded-full blur-md animate-pulse" />
+            <div className={cn(
+              "absolute inset-0 rounded-full blur-md animate-pulse",
+              isSunday ? "bg-amber-500/40" : "bg-accent/30"
+            )} />
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary font-bold overflow-hidden relative z-10 border-2 border-accent/20 shadow-inner">
               {churchSettings?.logo_url ? (
                 <img src={churchSettings.logo_url} alt="Logo" className="w-full h-full object-cover" />

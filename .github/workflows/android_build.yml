@@ -33,6 +33,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder' }}
+          VITE_BIBLE_API_KEY: ${{ secrets.VITE_BIBLE_API_KEY }}
 
       - name: Prepare Android Project
         run: |
@@ -50,6 +51,9 @@ jobs:
           fi
           if [ "${{ secrets.VITE_SUPABASE_ANON_KEY }}" == "" ]; then
             echo "::warning::VITE_SUPABASE_ANON_KEY is not set in GitHub Secrets. The app will be built with placeholder data and will not work correctly."
+          fi
+          if [ "${{ secrets.VITE_BIBLE_API_KEY }}" == "" ]; then
+            echo "::warning::VITE_BIBLE_API_KEY is not set in GitHub Secrets. The Bible feature will not work in the final app."
           fi
 
       - name: Install ImageMagick
